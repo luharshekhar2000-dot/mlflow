@@ -6281,23 +6281,17 @@ class SqlAlchemyStore(SqlAlchemyGatewayStoreMixin, AbstractStore):
 
     def _get_decrypted_secret(self, secret_id: str) -> dict[str, Any]:
         """
-        Get decrypted secret value by ID (server-side only).
+        Get decrypted secret value by ID.
 
         This is a privileged operation that decrypts a secret stored in the database.
         It should only be called server-side and never exposed to clients.
 
         Args:
             secret_id: ID of the secret to decrypt.
-            store: Optional SqlAlchemyStore instance. If not provided, the current
-                tracking store is used.
 
         Returns:
             Decrypted secret value as a dict (for compound credentials like
             {"api_key": "sk-xxx", ...}) or string (for simple secrets).
-
-        Raises:
-            MlflowException: If the tracking store is not a SqlAlchemyStore,
-                or if the secret is not found, or if decryption fails.
         """
         with self.ManagedSessionMaker() as session:
             sql_secret = self._get_entity_or_raise(
