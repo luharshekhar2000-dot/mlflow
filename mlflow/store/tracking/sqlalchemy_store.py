@@ -6290,8 +6290,7 @@ class SqlAlchemyStore(SqlAlchemyGatewayStoreMixin, AbstractStore):
             secret_id: ID of the secret to decrypt.
 
         Returns:
-            Decrypted secret value as a dict (for compound credentials like
-            {"api_key": "sk-xxx", ...}) or string (for simple secrets).
+            Decrypted secret value as a dict.
         """
         with self.ManagedSessionMaker() as session:
             sql_secret = self._get_entity_or_raise(
