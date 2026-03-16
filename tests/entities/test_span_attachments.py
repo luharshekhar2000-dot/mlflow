@@ -20,6 +20,9 @@ def test_set_inputs_extracts_attachment():
     inputs = span.inputs
     assert isinstance(inputs["image"], str)
     assert inputs["image"].startswith("mlflow-attachment://")
+    parsed = Attachment.parse_ref(inputs["image"])
+    assert parsed["trace_id"] == "tr-test123"
+    assert parsed["attachment_id"] == att.id
 
 
 def test_set_outputs_extracts_attachment():
