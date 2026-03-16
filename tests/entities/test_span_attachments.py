@@ -30,7 +30,8 @@ def test_set_outputs_extracts_attachment():
     assert att.id in span._attachments
     outputs = span.outputs
     assert isinstance(outputs["sound"], str)
-    assert "audio/wav" in outputs["sound"]
+    parsed = Attachment.parse_ref(outputs["sound"])
+    assert parsed["content_type"] == "audio/wav"
 
 
 def test_nested_dict_extraction():

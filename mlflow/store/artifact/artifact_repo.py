@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import posixpath
+import re
 import tempfile
 import traceback
 from abc import ABC, ABCMeta, abstractmethod
@@ -395,9 +396,9 @@ class ArtifactRepository:
             return try_read_trace_data(temp_file)
 
     def download_trace_attachment(self, path: str) -> bytes:
+        _validate_attachment_path(path)
         with tempfile.TemporaryDirectory() as temp_dir:
-            filename = Path(path).name
-            temp_file = Path(temp_dir, filename)
+            temp_file = Path(temp_dir, path)
             self._download_file(posixpath.join("attachments", path), temp_file)
             return temp_file.read_bytes()
 
@@ -412,6 +413,7 @@ class ArtifactRepository:
             self.log_artifact(temp_file)
 
     def upload_attachment(self, attachment_id: str, content_bytes: bytes) -> None:
+        _validate_attachment_path(attachment_id)
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_file = Path(temp_dir, attachment_id)
             temp_file.write_bytes(content_bytes)
@@ -519,4 +521,16 @@ def verify_artifact_path(artifact_path):
     if artifact_path and path_not_unique(artifact_path):
         raise MlflowException(
             f"Invalid artifact path: '{artifact_path}'. {bad_path_message(artifact_path)}"
+        )
+
+
+_ATTACHMENT_PATH_PATTERN = re.compile(r"^[a-f0-9\-]+$")
+
+
+def _validate_attachment_path(path: str) -> None:
+    if not path or not _ATTACHMENT_PATH_PATTERN.match(path):
+        raise MlflowException(
+            f"Invalid attachment path: '{path}'. "
+            "Attachment path must be a UUID (lowercase hex and hyphens only).",
+            error_code=INVALID_PARAMETER_VALUE,
         )

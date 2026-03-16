@@ -1,7 +1,7 @@
 import mimetypes
 import uuid
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 
 class Attachment:
@@ -40,9 +40,8 @@ class Attachment:
         return self._content_bytes
 
     def ref(self, trace_id: str) -> str:
-        return (
-            f"mlflow-attachment://{self._id}?content_type={self._content_type}&trace_id={trace_id}"
-        )
+        query = urlencode({"content_type": self._content_type, "trace_id": trace_id})
+        return f"mlflow-attachment://{self._id}?{query}"
 
     @staticmethod
     def parse_ref(ref_uri: str) -> dict[str, str] | None:

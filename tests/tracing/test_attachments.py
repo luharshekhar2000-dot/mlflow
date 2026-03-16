@@ -65,8 +65,9 @@ def test_attachment_ref():
     ref = att.ref("tr-abc123")
     assert ref.startswith("mlflow-attachment://")
     assert att.id in ref
-    assert "content_type=image/png" in ref
-    assert "trace_id=tr-abc123" in ref
+    parsed = Attachment.parse_ref(ref)
+    assert parsed["content_type"] == "image/png"
+    assert parsed["trace_id"] == "tr-abc123"
 
 
 def test_parse_ref_valid():

@@ -573,7 +573,7 @@ class LiveSpan(Span):
             return ref
         if isinstance(value, dict):
             return {k: self._extract_attachments(v) for k, v in value.items()}
-        if isinstance(value, list):
+        if isinstance(value, (list, tuple)):
             return [self._extract_attachments(item) for item in value]
         return value
 
