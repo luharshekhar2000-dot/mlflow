@@ -87,12 +87,6 @@ message Feedback {
   optional AssessmentError error = 3;
 }
 
-// Reference to an issue associated with this trace
-message IssueReference {
-  // The name of the issue this assessment references
-  optional string issue_name = 1 [(validate_required) = true];
-}
-
 // Data and metadata for an assessment of a trace.
 message Assessment {
   // Unique ID of the assessment.
@@ -118,14 +112,14 @@ message Assessment {
   optional google.protobuf.Timestamp last_update_time = 7;
 
   // An Assessment can either be human/code/judge Feedback, human-generated Expectation, or an IssueReference.
-  // The name of the Feedback or Expectation must be the same with the assessment_name.
+  // The name of the Feedback, Expectation, or IssueReference must be the same with the assessment_name.
   oneof value {
     // The feedback on the trace from this assessment.
     Feedback feedback = 9;
     // A representation of the guidelines and/or expected response from the agent.
     Expectation expectation = 10;
-    // A reference to an issue associated with this trace.
-    IssueReference issue = 16;
+    // A reference to an issue associated with this trace (uses Feedback structure).
+    Feedback issue = 16;
   }
 
   // Justification for the assessment.

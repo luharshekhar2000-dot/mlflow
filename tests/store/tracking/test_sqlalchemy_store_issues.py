@@ -647,22 +647,22 @@ def test_search_traces_by_issue_id(store):
     # Link traces to issues via IssueReference assessments
     store.create_assessment(
         IssueReference(
-            issue_id=issue1.issue_id,
-            issue_name=issue1.name,
+            name=issue1.name,
+            value=issue1.issue_id,
             trace_id=trace1.request_id,
         )
     )
     store.create_assessment(
         IssueReference(
-            issue_id=issue1.issue_id,
-            issue_name=issue1.name,
+            name=issue1.name,
+            value=issue1.issue_id,
             trace_id=trace2.request_id,
         )
     )
     store.create_assessment(
         IssueReference(
-            issue_id=issue2.issue_id,
-            issue_name=issue2.name,
+            name=issue2.name,
+            value=issue2.issue_id,
             trace_id=trace3.request_id,
         )
     )

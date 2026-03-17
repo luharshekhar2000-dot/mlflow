@@ -15,7 +15,6 @@ from mlflow.exceptions import MlflowException
 from mlflow.protos.assessments_pb2 import Assessment as ProtoAssessment
 from mlflow.protos.assessments_pb2 import Expectation as ProtoExpectation
 from mlflow.protos.assessments_pb2 import Feedback as ProtoFeedback
-from mlflow.protos.assessments_pb2 import IssueReference as ProtoIssueReference
 from mlflow.utils.exception_utils import get_stacktrace
 from mlflow.utils.proto_json_utils import proto_timestamp_to_milliseconds
 
@@ -40,9 +39,7 @@ class Assessment(_MlflowObject):
         For example, an expected answer for a user question from a chatbot.
     - Feedback: A label that represents the feedback on the quality of the operation.
         Feedback can come from different sources, such as human judges, heuristic scorers,
-        or LLM-as-a-Judge.
-    - IssueReference: A reference to an issue associated with a trace, used to link traces
-        to discovered quality or operational problems.
+        or LLM-as-a-Judge. Issues are also represented as a special type of Feedback.
     """
 
     name: str
@@ -66,11 +63,10 @@ class Assessment(_MlflowObject):
     # Deprecated, use `error` in Feedback instead. Just kept for backward compatibility
     # and will be removed in the 3.0.0 release.
     error: AssessmentError | None = None
-    # Should only be used internally. To create an assessment with an expectation, feedback,
-    # or issue reference, use the `Expectation`, `Feedback`, or `IssueReference` classes instead.
+    # Should only be used internally. To create an assessment with an expectation or feedback,
+    # use the `Expectation` or `Feedback` classes instead.
     expectation: ExpectationValue | None = None
     feedback: FeedbackValue | None = None
-    issue: IssueReferenceValue | None = None
     # The ID of the assessment which this assessment overrides.
     overrides: str | None = None
     # Whether this assessment is valid (i.e. has not been overridden).
@@ -80,11 +76,9 @@ class Assessment(_MlflowObject):
     def __post_init__(self):
         from mlflow.tracing.constant import AssessmentMetadataKey
 
-        if (self.expectation is not None) + (self.feedback is not None) + (
-            self.issue is not None
-        ) != 1:
+        if (self.expectation is not None) + (self.feedback is not None) != 1:
             raise MlflowException.invalid_parameter_value(
-                "Exactly one of `expectation`, `feedback`, or `issue` should be specified.",
+                "Exactly one of `expectation` or `feedback` should be specified.",
             )
 
         # Populate the error field to the feedback object
@@ -141,8 +135,6 @@ class Assessment(_MlflowObject):
             assessment.expectation.CopyFrom(self.expectation.to_proto())
         elif self.feedback is not None:
             assessment.feedback.CopyFrom(self.feedback.to_proto())
-        elif self.issue is not None:
-            assessment.issue.CopyFrom(self.issue.to_proto())
 
         if self.metadata:
             for key, value in self.metadata.items():
@@ -187,6 +179,7 @@ class Assessment(_MlflowObject):
 
 
 DEFAULT_FEEDBACK_NAME = "feedback"
+DEFAULT_ISSUE_NAME = "issue"
 
 
 @dataclass
@@ -491,138 +484,171 @@ _JSON_SERIALIZATION_FORMAT = "JSON_FORMAT"
 
 
 @dataclass
-class IssueReference(Assessment):
+class IssueReference(Feedback):
     """
-    Represents a reference to an issue associated with a trace. This type of assessment
-    is used internally to link traces to discovered issues.
+    Represents a reference to an issue associated with a trace. Issues are a special type of
+    feedback that link traces to external issue tracking systems or bug reports.
 
     Args:
-        issue_id: The ID of the issue this assessment references (stored in assessment name).
-        issue_name: The name of the issue (stored in the issue value).
-        source: The source of the assessment. If not provided, the default source is CODE.
-        trace_id: The ID of the trace associated with the assessment.
-        run_id: The ID of the run that discovered the issue.
+        name: The issue identifier (e.g., "JIRA-123", "issue-456"). This is used as the
+            assessment name.
+        value: The feedback value associated with the issue. Typically a boolean or string
+            indicating the issue type.
+        error: An optional error associated with the issue reference.
         rationale: The rationale / justification for the issue reference.
-        span_id: The ID of the span associated with the assessment, if applicable.
-        create_time_ms: The creation time of the assessment in milliseconds.
+        source: The source of the assessment. If not provided, the default source is CODE.
+        trace_id: The ID of the trace associated with the issue.
+        run_id: The ID of the run that detected the issue. If provided, it will be added
+            to metadata automatically.
+        metadata: The metadata associated with the assessment.
+        span_id: The ID of the span associated with the assessment, if the issue should
+            be associated with a particular span in the trace.
+        create_time_ms: The creation time of the assessment in milliseconds. If unset, the
+            current time is used.
         last_update_time_ms: The last update time of the assessment in milliseconds.
+            If unset, the current time is used.
+
+    Example:
+
+        .. code-block:: python
+
+            from mlflow.entities import AssessmentSource, IssueReference
+
+            issue = IssueReference(
+                name="JIRA-123",
+                value=True,
+                rationale="Trace shows incorrect output for edge case",
+                source=AssessmentSource(
+                    source_type="HUMAN",
+                    source_id="john@example.com",
+                ),
+                run_id="run-123",
+            )
     """
 
     def __init__(
         self,
-        issue_id: str,
-        issue_name: str,
+        name: str = DEFAULT_ISSUE_NAME,
+        value: FeedbackValueType | None = None,
+        error: Exception | AssessmentError | str | None = None,
         source: AssessmentSource | None = None,
         trace_id: str | None = None,
         run_id: str | None = None,
-        rationale: str | None = None,
         metadata: dict[str, str] | None = None,
         span_id: str | None = None,
         create_time_ms: int | None = None,
         last_update_time_ms: int | None = None,
+        rationale: str | None = None,
+        overrides: str | None = None,
+        valid: bool = True,
     ):
-        if source is None:
-            source = AssessmentSource(source_type=AssessmentSourceType.LLM_JUDGE)
+        # import here to avoid circular import
+        from mlflow.tracing.constant import AssessmentMetadataKey
 
-        if issue_id is None:
-            raise MlflowException.invalid_parameter_value("The `issue_id` field must be specified.")
-        if issue_name is None:
-            raise MlflowException.invalid_parameter_value(
-                "The `issue_name` field must be specified."
-            )
+        # Add run_id to metadata if provided
+        issue_metadata = metadata.copy() if metadata else {}
+        if run_id:
+            issue_metadata[AssessmentMetadataKey.SOURCE_RUN_ID] = run_id
 
+        # Call parent constructor with updated metadata
         super().__init__(
-            name=issue_id,
+            name=name,
+            value=value,
+            error=error,
             source=source,
             trace_id=trace_id,
-            run_id=run_id,
-            rationale=rationale,
-            metadata=metadata,
+            metadata=issue_metadata,
             span_id=span_id,
             create_time_ms=create_time_ms,
             last_update_time_ms=last_update_time_ms,
-            issue=IssueReferenceValue(issue_name=issue_name),
+            rationale=rationale,
+            overrides=overrides,
+            valid=valid,
         )
 
-    @property
-    def issue_id(self) -> str:
-        return self.name
+    def to_proto(self):
+        """Convert IssueReference to protobuf, using 'issue' field instead of 'feedback'."""
+        assessment = ProtoAssessment()
+        assessment.assessment_name = self.name
+        assessment.trace_id = self.trace_id or ""
 
-    @issue_id.setter
-    def issue_id(self, issue_id: str):
-        self.name = issue_id
+        assessment.source.CopyFrom(self.source.to_proto())
 
-    @property
-    def issue_name(self) -> str:
-        return self.issue.issue_name
+        # Convert time in milliseconds to protobuf Timestamp
+        assessment.create_time.FromMilliseconds(self.create_time_ms)
+        assessment.last_update_time.FromMilliseconds(self.last_update_time_ms)
 
-    @issue_name.setter
-    def issue_name(self, issue_name: str):
-        self.issue.issue_name = issue_name
+        if self.span_id is not None:
+            assessment.span_id = self.span_id
+        if self.rationale is not None:
+            assessment.rationale = self.rationale
+        if self.assessment_id is not None:
+            assessment.assessment_id = self.assessment_id
+
+        # Use 'issue' field instead of 'feedback'
+        assessment.issue.CopyFrom(self.feedback.to_proto())
+
+        if self.metadata:
+            for key, value in self.metadata.items():
+                assessment.metadata[key] = str(value)
+        if self.overrides:
+            assessment.overrides = self.overrides
+        if self.valid is not None:
+            assessment.valid = self.valid
+
+        return assessment
 
     @classmethod
-    def from_proto(cls, proto) -> "IssueReference":
+    def from_proto(cls, proto):
+        """Create IssueReference from protobuf, reading from 'issue' field."""
         from mlflow.utils.databricks_tracing_utils import get_trace_id_from_assessment_proto
 
+        # Convert ScalarMapContainer to a normal Python dict
         metadata = dict(proto.metadata) if proto.metadata else None
-        issue_ref = cls(
+        feedback_value = FeedbackValue.from_proto(proto.issue)  # Read from 'issue' field
+        issue = cls(
             trace_id=get_trace_id_from_assessment_proto(proto),
-            issue_id=proto.assessment_name,
-            issue_name=proto.issue.issue_name,
+            name=proto.assessment_name,
             source=AssessmentSource.from_proto(proto.source),
             create_time_ms=proto.create_time.ToMilliseconds(),
             last_update_time_ms=proto.last_update_time.ToMilliseconds(),
+            value=feedback_value.value,
+            error=feedback_value.error,
             rationale=proto.rationale or None,
             metadata=metadata,
             span_id=proto.span_id or None,
+            overrides=proto.overrides or None,
+            valid=proto.valid,
         )
-        issue_ref.assessment_id = proto.assessment_id or None
-        return issue_ref
+        issue.assessment_id = proto.assessment_id or None
+        return issue
 
     @classmethod
     def from_dictionary(cls, d: dict[str, Any]) -> "IssueReference":
+        """Create IssueReference from dictionary, reading from 'issue' field."""
         issue_value = d.get("issue")
 
         if not issue_value:
             raise MlflowException.invalid_parameter_value("`issue` must exist in the dictionary.")
 
-        issue_ref = cls(
+        feedback_value = FeedbackValue.from_dictionary(issue_value)
+
+        issue = cls(
             trace_id=d.get("trace_id"),
-            issue_id=d["assessment_name"],
-            issue_name=issue_value["issue_name"],
+            name=d["assessment_name"],
             source=AssessmentSource.from_dictionary(d["source"]),
             create_time_ms=proto_timestamp_to_milliseconds(d["create_time"]),
             last_update_time_ms=proto_timestamp_to_milliseconds(d["last_update_time"]),
+            value=feedback_value.value,
+            error=feedback_value.error,
             rationale=d.get("rationale"),
             metadata=d.get("metadata"),
             span_id=d.get("span_id"),
+            overrides=d.get("overrides"),
+            valid=d.get("valid", True),
         )
-
-        issue_ref.assessment_id = d.get("assessment_id") or None
-        if run_id := d.get("run_id"):
-            issue_ref.run_id = run_id
-        return issue_ref
-
-
-@dataclass
-class IssueReferenceValue(_MlflowObject):
-    """Represents an issue reference value."""
-
-    issue_name: str
-
-    def to_proto(self):
-        return ProtoIssueReference(issue_name=self.issue_name)
-
-    @classmethod
-    def from_proto(cls, proto) -> "IssueReferenceValue":
-        return cls(issue_name=proto.issue_name)
-
-    def to_dictionary(self):
-        return {"issue_name": self.issue_name}
-
-    @classmethod
-    def from_dictionary(cls, d):
-        return cls(issue_name=d["issue_name"])
+        issue.assessment_id = d.get("assessment_id") or None
+        return issue
 
 
 @dataclass

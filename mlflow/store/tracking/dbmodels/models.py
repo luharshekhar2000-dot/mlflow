@@ -1047,19 +1047,19 @@ class SqlAssessments(Base):
             assessment.valid = self.valid
         elif assessment_type_value == "issue":
             assessment = IssueReference(
-                issue_id=self.name,
-                issue_name=parsed_value.get("issue_name"),
+                name=self.name,
+                value=parsed_value,
+                error=parsed_error,
                 source=source,
                 trace_id=self.trace_id,
-                run_id=self.run_id,
                 rationale=self.rationale,
                 metadata=parsed_metadata,
                 span_id=self.span_id,
                 create_time_ms=self.created_timestamp,
                 last_update_time_ms=self.last_updated_timestamp,
+                overrides=self.overrides,
+                valid=self.valid,
             )
-            assessment.overrides = self.overrides
-            assessment.valid = self.valid
         else:
             raise ValueError(f"Unknown assessment type: {assessment_type_value}")
 
@@ -1075,7 +1075,15 @@ class SqlAssessments(Base):
 
         current_timestamp = get_current_time_millis()
 
-        if assessment.feedback is not None:
+        if isinstance(assessment, IssueReference):
+            assessment_type = "issue"
+            value_json = json.dumps(assessment.feedback.value)
+            error_json = (
+                json.dumps(assessment.feedback.error.to_dictionary())
+                if assessment.feedback.error
+                else None
+            )
+        elif assessment.feedback is not None:
             assessment_type = "feedback"
             value_json = json.dumps(assessment.feedback.value)
             error_json = (
@@ -1087,13 +1095,9 @@ class SqlAssessments(Base):
             assessment_type = "expectation"
             value_json = json.dumps(assessment.expectation.value)
             error_json = None
-        elif assessment.issue is not None:
-            assessment_type = "issue"
-            value_json = json.dumps(assessment.issue.to_dictionary())
-            error_json = None
         else:
             raise MlflowException.invalid_parameter_value(
-                "Assessment must have either feedback, expectation, or issue value"
+                "Assessment must have either feedback or expectation value"
             )
 
         metadata_json = json.dumps(assessment.metadata) if assessment.metadata else None

@@ -6648,16 +6648,19 @@ def _get_filter_clauses_for_search_traces(filter_string, session, dialect):
         # Check if this is an issue filter (stored in assessments table)
         # Note: Issue filters use the format 'issue.id = "issue-123"', which differs
         # from assessment filters that use 'feedback/expectation.<key_name> <operator> <value>'.
-        # Issue filters match on issue ID, which is the assessment name instead of value.
+        # Issue filters match on issue ID, which is stored in the assessment value field.
         if SearchTraceUtils.is_issue(key_type, key_name, comparator):
             # Query assessments table for issue references
-            # IssueReference assessments have assessment_type='issue' and name=issue_id
+            # Issues are stored as a special type of assessment with assessment_type='issue'
+            value_filter = SearchTraceUtils._get_sql_json_comparison_func(comparator, dialect)(
+                SqlAssessments.value, value
+            )
             issue_subquery = (
                 session
                 .query(SqlAssessments.trace_id.label("request_id"))
                 .filter(
                     SqlAssessments.assessment_type == "issue",
-                    SqlAssessments.name == value,
+                    value_filter,
                 )
                 .distinct()
                 .subquery()

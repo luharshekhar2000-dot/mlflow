@@ -13,14 +13,12 @@ from mlflow.entities.assessment import (
     Feedback,
     FeedbackValue,
     IssueReference,
-    IssueReferenceValue,
 )
 from mlflow.entities.assessment_error import _STACK_TRACE_TRUNCATION_LENGTH
 from mlflow.exceptions import MlflowException
 from mlflow.protos.assessments_pb2 import Assessment as ProtoAssessment
 from mlflow.protos.assessments_pb2 import Expectation as ProtoExpectation
 from mlflow.protos.assessments_pb2 import Feedback as ProtoFeedback
-from mlflow.protos.assessments_pb2 import IssueReference as ProtoIssueReference
 from mlflow.protos.databricks_tracing_pb2 import Assessment as ProtoAssessmentV4
 from mlflow.protos.databricks_tracing_pb2 import TraceLocation, UCSchemaLocation
 from mlflow.tracing.constant import AssessmentMetadataKey
@@ -157,7 +155,6 @@ def test_assessment_value_validation():
         feedback=FeedbackValue("This is correct.", AssessmentError(error_code="E001")),
         **common_args,
     )
-    Assessment(issue=IssueReferenceValue(issue_name="test_issue"), **common_args)
 
     # Invalid case: no value specified
     with pytest.raises(MlflowException, match=r"Exactly one of"):
@@ -168,31 +165,6 @@ def test_assessment_value_validation():
         Assessment(
             expectation=ExpectationValue("MLflow"),
             feedback=FeedbackValue("This is correct."),
-            **common_args,
-        )
-
-    # Invalid case: both feedback and issue specified
-    with pytest.raises(MlflowException, match=r"Exactly one of"):
-        Assessment(
-            feedback=FeedbackValue(1.0),
-            issue=IssueReferenceValue(issue_name="test_issue"),
-            **common_args,
-        )
-
-    # Invalid case: both expectation and issue specified
-    with pytest.raises(MlflowException, match=r"Exactly one of"):
-        Assessment(
-            expectation=ExpectationValue("test"),
-            issue=IssueReferenceValue(issue_name="test_issue"),
-            **common_args,
-        )
-
-    # Invalid case: all three specified
-    with pytest.raises(MlflowException, match=r"Exactly one of"):
-        Assessment(
-            expectation=ExpectationValue("MLflow"),
-            feedback=FeedbackValue("This is correct.", AssessmentError(error_code="E001")),
-            issue=IssueReferenceValue(issue_name="test_issue"),
             **common_args,
         )
 
@@ -639,8 +611,8 @@ def test_issue_reference_creation():
     source = AssessmentSource(source_type="CODE", source_id="issue_detector.py")
 
     issue_ref = IssueReference(
-        issue_id="iss-12345",
-        issue_name="timeout_error",
+        name="timeout_error",
+        value="iss-12345",
         source=source,
         trace_id="trace_123",
         run_id="run_456",
@@ -650,59 +622,36 @@ def test_issue_reference_creation():
         last_update_time_ms=timestamp_ms,
     )
 
-    assert issue_ref.name == "iss-12345"
-    assert issue_ref.issue_id == "iss-12345"
-    assert issue_ref.issue_name == "timeout_error"
+    assert issue_ref.name == "timeout_error"
+    assert issue_ref.value == "iss-12345"
     assert issue_ref.source == source
     assert issue_ref.trace_id == "trace_123"
     assert issue_ref.run_id == "run_456"
-    assert issue_ref.metadata == {"severity": "high"}
+    assert issue_ref.metadata[AssessmentMetadataKey.SOURCE_RUN_ID] == "run_456"
+    assert issue_ref.metadata["severity"] == "high"
     assert issue_ref.span_id == "span_789"
     assert issue_ref.create_time_ms == timestamp_ms
     assert issue_ref.last_update_time_ms == timestamp_ms
 
-    # Test default source is LLM_JUDGE
-    issue_ref_default = IssueReference(issue_id="iss-999", issue_name="test_issue")
-    assert issue_ref_default.source.source_type == "LLM_JUDGE"
+    issue_ref_default = IssueReference(name="test_issue", value="iss-999")
+    assert issue_ref_default.source.source_type == "CODE"
 
 
-def test_issue_reference_requires_issue_id():
-    with pytest.raises(MlflowException, match="The `issue_id` field must be specified"):
-        IssueReference(issue_id=None, issue_name="test_issue")
-
-    with pytest.raises(MlflowException, match="The `issue_name` field must be specified"):
-        IssueReference(issue_id="iss-123", issue_name=None)
+def test_issue_reference_requires_value():
+    with pytest.raises(MlflowException, match="Either `value` or `error` must be provided"):
+        IssueReference(name="test_issue", value=None)
 
 
 def test_issue_reference_value_assignment():
-    issue_ref = IssueReference(issue_id="iss-111", issue_name="test_issue")
-    assert issue_ref.issue_id == "iss-111"
-    assert issue_ref.issue_name == "test_issue"
+    issue_ref = IssueReference(name="test_issue", value="iss-111")
+    assert issue_ref.value == "iss-111"
+    assert issue_ref.name == "test_issue"
 
-    issue_ref.issue_id = "iss-222"
-    assert issue_ref.issue_id == "iss-222"
+    issue_ref.value = "iss-222"
+    assert issue_ref.value == "iss-222"
 
-    issue_ref.issue_name = "updated_issue"
-    assert issue_ref.issue_name == "updated_issue"
-
-
-def test_issue_reference_value_proto_dict_conversion():
-    issue_value = IssueReferenceValue(issue_name="timeout_error")
-
-    # Test proto conversion
-    proto = issue_value.to_proto()
-    assert isinstance(proto, ProtoIssueReference)
-    assert proto.issue_name == "timeout_error"
-
-    result = IssueReferenceValue.from_proto(proto)
-    assert result.issue_name == issue_value.issue_name
-
-    # Test dictionary conversion
-    issue_dict = issue_value.to_dictionary()
-    assert issue_dict == {"issue_name": "timeout_error"}
-
-    result = IssueReferenceValue.from_dictionary(issue_dict)
-    assert result.issue_name == issue_value.issue_name
+    issue_ref.name = "updated_issue"
+    assert issue_ref.name == "updated_issue"
 
 
 @pytest.mark.parametrize(
@@ -723,8 +672,8 @@ def test_issue_reference_conversion(source, metadata):
     timestamp_ms = int(time.time() * 1000)
 
     issue_ref = IssueReference(
-        issue_id="iss-12345",
-        issue_name="timeout_error",
+        name="timeout_error",
+        value="iss-12345",
         source=source,
         trace_id="trace_123",
         metadata=metadata,
@@ -733,24 +682,40 @@ def test_issue_reference_conversion(source, metadata):
         last_update_time_ms=timestamp_ms,
     )
 
-    # Test proto conversion
     proto = issue_ref.to_proto()
     assert isinstance(proto, ProtoAssessment)
     assert proto.WhichOneof("value") == "issue"
-    assert proto.issue.issue_name == "timeout_error"
+    assert proto.assessment_name == "timeout_error"
 
     result = Assessment.from_proto(proto)
     assert isinstance(result, IssueReference)
     assert result == issue_ref
 
-    # Test dictionary conversion
     dict_repr = issue_ref.to_dictionary()
     assert dict_repr.get("assessment_id") == issue_ref.assessment_id
     assert dict_repr["trace_id"] == issue_ref.trace_id
-    assert dict_repr["assessment_name"] == "iss-12345"
+    assert dict_repr["assessment_name"] == "timeout_error"
     assert dict_repr["source"].get("source_type") == source.source_type
     assert dict_repr["source"].get("source_id") == source.source_id
     assert proto_timestamp_to_milliseconds(dict_repr["create_time"]) == timestamp_ms
     assert proto_timestamp_to_milliseconds(dict_repr["last_update_time"]) == timestamp_ms
-    assert dict_repr["issue"] == {"issue_name": "timeout_error"}
+    assert dict_repr["issue"]["value"] == "iss-12345"
     assert dict_repr.get("metadata") == metadata
+
+
+def test_issue_reference_run_id_in_metadata():
+    issue_ref = IssueReference(
+        name="test_issue",
+        value="iss-123",
+        run_id="run_456",
+        metadata={"other_key": "other_value"},
+    )
+
+    assert issue_ref.run_id == "run_456"
+    assert issue_ref.metadata[AssessmentMetadataKey.SOURCE_RUN_ID] == "run_456"
+    assert issue_ref.metadata["other_key"] == "other_value"
+
+    proto = issue_ref.to_proto()
+    recovered = IssueReference.from_proto(proto)
+    assert recovered.run_id == "run_456"
+    assert recovered.metadata[AssessmentMetadataKey.SOURCE_RUN_ID] == "run_456"

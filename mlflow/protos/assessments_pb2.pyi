@@ -60,12 +60,6 @@ class Feedback(_message.Message):
     error: AssessmentError
     def __init__(self, value: _Optional[_Union[_struct_pb2.Value, _Mapping]] = ..., error: _Optional[_Union[AssessmentError, _Mapping]] = ...) -> None: ...
 
-class IssueReference(_message.Message):
-    __slots__ = ("issue_name",)
-    ISSUE_NAME_FIELD_NUMBER: _ClassVar[int]
-    issue_name: str
-    def __init__(self, issue_name: _Optional[str] = ...) -> None: ...
-
 class Assessment(_message.Message):
     __slots__ = ("assessment_id", "assessment_name", "trace_id", "span_id", "source", "create_time", "last_update_time", "feedback", "expectation", "issue", "rationale", "error", "metadata", "overrides", "valid")
     class MetadataEntry(_message.Message):
@@ -99,10 +93,10 @@ class Assessment(_message.Message):
     last_update_time: _timestamp_pb2.Timestamp
     feedback: Feedback
     expectation: Expectation
-    issue: IssueReference
+    issue: Feedback
     rationale: str
     error: AssessmentError
     metadata: _containers.ScalarMap[str, str]
     overrides: str
     valid: bool
-    def __init__(self, assessment_id: _Optional[str] = ..., assessment_name: _Optional[str] = ..., trace_id: _Optional[str] = ..., span_id: _Optional[str] = ..., source: _Optional[_Union[AssessmentSource, _Mapping]] = ..., create_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., last_update_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., feedback: _Optional[_Union[Feedback, _Mapping]] = ..., expectation: _Optional[_Union[Expectation, _Mapping]] = ..., issue: _Optional[_Union[IssueReference, _Mapping]] = ..., rationale: _Optional[str] = ..., error: _Optional[_Union[AssessmentError, _Mapping]] = ..., metadata: _Optional[_Mapping[str, str]] = ..., overrides: _Optional[str] = ..., valid: bool = ...) -> None: ...
+    def __init__(self, assessment_id: _Optional[str] = ..., assessment_name: _Optional[str] = ..., trace_id: _Optional[str] = ..., span_id: _Optional[str] = ..., source: _Optional[_Union[AssessmentSource, _Mapping]] = ..., create_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., last_update_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., feedback: _Optional[_Union[Feedback, _Mapping]] = ..., expectation: _Optional[_Union[Expectation, _Mapping]] = ..., issue: _Optional[_Union[Feedback, _Mapping]] = ..., rationale: _Optional[str] = ..., error: _Optional[_Union[AssessmentError, _Mapping]] = ..., metadata: _Optional[_Mapping[str, str]] = ..., overrides: _Optional[str] = ..., valid: bool = ...) -> None: ...

@@ -379,6 +379,8 @@ def log_issue(
                 rationale="Response time exceeded 2 seconds threshold",
             )
     """
+    from mlflow.entities.assessment_source import AssessmentSourceType
+
     fetched_issue_name = TracingClient()._get_issue(issue_id).name
     if issue_name is None:
         issue_name = fetched_issue_name
@@ -387,9 +389,16 @@ def log_issue(
             f"Provided issue name {issue_name!r} does not match the issue name "
             f"{fetched_issue_name!r} with issue ID {issue_id}."
         )
+
+    # Default to LLM_JUDGE source if not provided
+    if source is None:
+        source = AssessmentSource(source_type=AssessmentSourceType.LLM_JUDGE)
+
+    # Create an IssueReference assessment
+    # Use issue_name as the assessment name (human-readable) and issue_id as the value
     assessment = IssueReference(
-        issue_id=issue_id,
-        issue_name=issue_name,
+        name=issue_name,
+        value=issue_id,
         source=source,
         trace_id=trace_id,
         run_id=run_id,

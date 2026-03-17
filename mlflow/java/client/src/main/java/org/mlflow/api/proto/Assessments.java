@@ -5134,668 +5134,6 @@ public final class Assessments {
 
   }
 
-  public interface IssueReferenceOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:mlflow.assessments.IssueReference)
-      com.google.protobuf.MessageOrBuilder {
-
-    /**
-     * <pre>
-     * The name of the issue this assessment references
-     * </pre>
-     *
-     * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-     * @return Whether the issueName field is set.
-     */
-    boolean hasIssueName();
-    /**
-     * <pre>
-     * The name of the issue this assessment references
-     * </pre>
-     *
-     * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-     * @return The issueName.
-     */
-    java.lang.String getIssueName();
-    /**
-     * <pre>
-     * The name of the issue this assessment references
-     * </pre>
-     *
-     * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-     * @return The bytes for issueName.
-     */
-    com.google.protobuf.ByteString
-        getIssueNameBytes();
-  }
-  /**
-   * <pre>
-   * Reference to an issue associated with this trace
-   * </pre>
-   *
-   * Protobuf type {@code mlflow.assessments.IssueReference}
-   */
-  public static final class IssueReference extends
-      com.google.protobuf.GeneratedMessageV3 implements
-      // @@protoc_insertion_point(message_implements:mlflow.assessments.IssueReference)
-      IssueReferenceOrBuilder {
-  private static final long serialVersionUID = 0L;
-    // Use IssueReference.newBuilder() to construct.
-    private IssueReference(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
-      super(builder);
-    }
-    private IssueReference() {
-      issueName_ = "";
-    }
-
-    @java.lang.Override
-    @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
-      return new IssueReference();
-    }
-
-    @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
-    private IssueReference(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              com.google.protobuf.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000001;
-              issueName_ = bs;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return org.mlflow.api.proto.Assessments.internal_static_mlflow_assessments_IssueReference_descriptor;
-    }
-
-    @java.lang.Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return org.mlflow.api.proto.Assessments.internal_static_mlflow_assessments_IssueReference_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              org.mlflow.api.proto.Assessments.IssueReference.class, org.mlflow.api.proto.Assessments.IssueReference.Builder.class);
-    }
-
-    private int bitField0_;
-    public static final int ISSUE_NAME_FIELD_NUMBER = 1;
-    private volatile java.lang.Object issueName_;
-    /**
-     * <pre>
-     * The name of the issue this assessment references
-     * </pre>
-     *
-     * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-     * @return Whether the issueName field is set.
-     */
-    @java.lang.Override
-    public boolean hasIssueName() {
-      return ((bitField0_ & 0x00000001) != 0);
-    }
-    /**
-     * <pre>
-     * The name of the issue this assessment references
-     * </pre>
-     *
-     * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-     * @return The issueName.
-     */
-    @java.lang.Override
-    public java.lang.String getIssueName() {
-      java.lang.Object ref = issueName_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          issueName_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <pre>
-     * The name of the issue this assessment references
-     * </pre>
-     *
-     * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-     * @return The bytes for issueName.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString
-        getIssueNameBytes() {
-      java.lang.Object ref = issueName_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        issueName_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    private byte memoizedIsInitialized = -1;
-    @java.lang.Override
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    @java.lang.Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      if (((bitField0_ & 0x00000001) != 0)) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, issueName_);
-      }
-      unknownFields.writeTo(output);
-    }
-
-    @java.lang.Override
-    public int getSerializedSize() {
-      int size = memoizedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) != 0)) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, issueName_);
-      }
-      size += unknownFields.getSerializedSize();
-      memoizedSize = size;
-      return size;
-    }
-
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
-      if (obj == this) {
-       return true;
-      }
-      if (!(obj instanceof org.mlflow.api.proto.Assessments.IssueReference)) {
-        return super.equals(obj);
-      }
-      org.mlflow.api.proto.Assessments.IssueReference other = (org.mlflow.api.proto.Assessments.IssueReference) obj;
-
-      if (hasIssueName() != other.hasIssueName()) return false;
-      if (hasIssueName()) {
-        if (!getIssueName()
-            .equals(other.getIssueName())) return false;
-      }
-      if (!unknownFields.equals(other.unknownFields)) return false;
-      return true;
-    }
-
-    @java.lang.Override
-    public int hashCode() {
-      if (memoizedHashCode != 0) {
-        return memoizedHashCode;
-      }
-      int hash = 41;
-      hash = (19 * hash) + getDescriptor().hashCode();
-      if (hasIssueName()) {
-        hash = (37 * hash) + ISSUE_NAME_FIELD_NUMBER;
-        hash = (53 * hash) + getIssueName().hashCode();
-      }
-      hash = (29 * hash) + unknownFields.hashCode();
-      memoizedHashCode = hash;
-      return hash;
-    }
-
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        java.nio.ByteBuffer data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        java.nio.ByteBuffer data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static org.mlflow.api.proto.Assessments.IssueReference parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-
-    @java.lang.Override
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder() {
-      return DEFAULT_INSTANCE.toBuilder();
-    }
-    public static Builder newBuilder(org.mlflow.api.proto.Assessments.IssueReference prototype) {
-      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-    }
-    @java.lang.Override
-    public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
-    }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * <pre>
-     * Reference to an issue associated with this trace
-     * </pre>
-     *
-     * Protobuf type {@code mlflow.assessments.IssueReference}
-     */
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:mlflow.assessments.IssueReference)
-        org.mlflow.api.proto.Assessments.IssueReferenceOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return org.mlflow.api.proto.Assessments.internal_static_mlflow_assessments_IssueReference_descriptor;
-      }
-
-      @java.lang.Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return org.mlflow.api.proto.Assessments.internal_static_mlflow_assessments_IssueReference_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                org.mlflow.api.proto.Assessments.IssueReference.class, org.mlflow.api.proto.Assessments.IssueReference.Builder.class);
-      }
-
-      // Construct using org.mlflow.api.proto.Assessments.IssueReference.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
-      }
-      @java.lang.Override
-      public Builder clear() {
-        super.clear();
-        issueName_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
-        return this;
-      }
-
-      @java.lang.Override
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return org.mlflow.api.proto.Assessments.internal_static_mlflow_assessments_IssueReference_descriptor;
-      }
-
-      @java.lang.Override
-      public org.mlflow.api.proto.Assessments.IssueReference getDefaultInstanceForType() {
-        return org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance();
-      }
-
-      @java.lang.Override
-      public org.mlflow.api.proto.Assessments.IssueReference build() {
-        org.mlflow.api.proto.Assessments.IssueReference result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      @java.lang.Override
-      public org.mlflow.api.proto.Assessments.IssueReference buildPartial() {
-        org.mlflow.api.proto.Assessments.IssueReference result = new org.mlflow.api.proto.Assessments.IssueReference(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) != 0)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.issueName_ = issueName_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      @java.lang.Override
-      public Builder clone() {
-        return super.clone();
-      }
-      @java.lang.Override
-      public Builder setField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
-        return super.setField(field, value);
-      }
-      @java.lang.Override
-      public Builder clearField(
-          com.google.protobuf.Descriptors.FieldDescriptor field) {
-        return super.clearField(field);
-      }
-      @java.lang.Override
-      public Builder clearOneof(
-          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-        return super.clearOneof(oneof);
-      }
-      @java.lang.Override
-      public Builder setRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
-        return super.setRepeatedField(field, index, value);
-      }
-      @java.lang.Override
-      public Builder addRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
-        return super.addRepeatedField(field, value);
-      }
-      @java.lang.Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof org.mlflow.api.proto.Assessments.IssueReference) {
-          return mergeFrom((org.mlflow.api.proto.Assessments.IssueReference)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(org.mlflow.api.proto.Assessments.IssueReference other) {
-        if (other == org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance()) return this;
-        if (other.hasIssueName()) {
-          bitField0_ |= 0x00000001;
-          issueName_ = other.issueName_;
-          onChanged();
-        }
-        this.mergeUnknownFields(other.unknownFields);
-        onChanged();
-        return this;
-      }
-
-      @java.lang.Override
-      public final boolean isInitialized() {
-        return true;
-      }
-
-      @java.lang.Override
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        org.mlflow.api.proto.Assessments.IssueReference parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.mlflow.api.proto.Assessments.IssueReference) e.getUnfinishedMessage();
-          throw e.unwrapIOException();
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      private java.lang.Object issueName_ = "";
-      /**
-       * <pre>
-       * The name of the issue this assessment references
-       * </pre>
-       *
-       * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-       * @return Whether the issueName field is set.
-       */
-      public boolean hasIssueName() {
-        return ((bitField0_ & 0x00000001) != 0);
-      }
-      /**
-       * <pre>
-       * The name of the issue this assessment references
-       * </pre>
-       *
-       * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-       * @return The issueName.
-       */
-      public java.lang.String getIssueName() {
-        java.lang.Object ref = issueName_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            issueName_ = s;
-          }
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <pre>
-       * The name of the issue this assessment references
-       * </pre>
-       *
-       * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-       * @return The bytes for issueName.
-       */
-      public com.google.protobuf.ByteString
-          getIssueNameBytes() {
-        java.lang.Object ref = issueName_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          issueName_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <pre>
-       * The name of the issue this assessment references
-       * </pre>
-       *
-       * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-       * @param value The issueName to set.
-       * @return This builder for chaining.
-       */
-      public Builder setIssueName(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        issueName_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * The name of the issue this assessment references
-       * </pre>
-       *
-       * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearIssueName() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        issueName_ = getDefaultInstance().getIssueName();
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * The name of the issue this assessment references
-       * </pre>
-       *
-       * <code>optional string issue_name = 1 [(.mlflow.validate_required) = true];</code>
-       * @param value The bytes for issueName to set.
-       * @return This builder for chaining.
-       */
-      public Builder setIssueNameBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        issueName_ = value;
-        onChanged();
-        return this;
-      }
-      @java.lang.Override
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
-      }
-
-      @java.lang.Override
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.mergeUnknownFields(unknownFields);
-      }
-
-
-      // @@protoc_insertion_point(builder_scope:mlflow.assessments.IssueReference)
-    }
-
-    // @@protoc_insertion_point(class_scope:mlflow.assessments.IssueReference)
-    private static final org.mlflow.api.proto.Assessments.IssueReference DEFAULT_INSTANCE;
-    static {
-      DEFAULT_INSTANCE = new org.mlflow.api.proto.Assessments.IssueReference();
-    }
-
-    public static org.mlflow.api.proto.Assessments.IssueReference getDefaultInstance() {
-      return DEFAULT_INSTANCE;
-    }
-
-    @java.lang.Deprecated public static final com.google.protobuf.Parser<IssueReference>
-        PARSER = new com.google.protobuf.AbstractParser<IssueReference>() {
-      @java.lang.Override
-      public IssueReference parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new IssueReference(input, extensionRegistry);
-      }
-    };
-
-    public static com.google.protobuf.Parser<IssueReference> parser() {
-      return PARSER;
-    }
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<IssueReference> getParserForType() {
-      return PARSER;
-    }
-
-    @java.lang.Override
-    public org.mlflow.api.proto.Assessments.IssueReference getDefaultInstanceForType() {
-      return DEFAULT_INSTANCE;
-    }
-
-  }
-
   public interface AssessmentOrBuilder extends
       // @@protoc_insertion_point(interface_extends:mlflow.assessments.Assessment)
       com.google.protobuf.MessageOrBuilder {
@@ -6059,30 +5397,30 @@ public final class Assessments {
 
     /**
      * <pre>
-     * A reference to an issue associated with this trace.
+     * A reference to an issue associated with this trace (uses Feedback structure).
      * </pre>
      *
-     * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+     * <code>.mlflow.assessments.Feedback issue = 16;</code>
      * @return Whether the issue field is set.
      */
     boolean hasIssue();
     /**
      * <pre>
-     * A reference to an issue associated with this trace.
+     * A reference to an issue associated with this trace (uses Feedback structure).
      * </pre>
      *
-     * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+     * <code>.mlflow.assessments.Feedback issue = 16;</code>
      * @return The issue.
      */
-    org.mlflow.api.proto.Assessments.IssueReference getIssue();
+    org.mlflow.api.proto.Assessments.Feedback getIssue();
     /**
      * <pre>
-     * A reference to an issue associated with this trace.
+     * A reference to an issue associated with this trace (uses Feedback structure).
      * </pre>
      *
-     * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+     * <code>.mlflow.assessments.Feedback issue = 16;</code>
      */
-    org.mlflow.api.proto.Assessments.IssueReferenceOrBuilder getIssueOrBuilder();
+    org.mlflow.api.proto.Assessments.FeedbackOrBuilder getIssueOrBuilder();
 
     /**
      * <pre>
@@ -6450,14 +5788,14 @@ public final class Assessments {
               break;
             }
             case 130: {
-              org.mlflow.api.proto.Assessments.IssueReference.Builder subBuilder = null;
+              org.mlflow.api.proto.Assessments.Feedback.Builder subBuilder = null;
               if (valueCase_ == 16) {
-                subBuilder = ((org.mlflow.api.proto.Assessments.IssueReference) value_).toBuilder();
+                subBuilder = ((org.mlflow.api.proto.Assessments.Feedback) value_).toBuilder();
               }
               value_ =
-                  input.readMessage(org.mlflow.api.proto.Assessments.IssueReference.PARSER, extensionRegistry);
+                  input.readMessage(org.mlflow.api.proto.Assessments.Feedback.PARSER, extensionRegistry);
               if (subBuilder != null) {
-                subBuilder.mergeFrom((org.mlflow.api.proto.Assessments.IssueReference) value_);
+                subBuilder.mergeFrom((org.mlflow.api.proto.Assessments.Feedback) value_);
                 value_ = subBuilder.buildPartial();
               }
               valueCase_ = 16;
@@ -7000,10 +6338,10 @@ public final class Assessments {
     public static final int ISSUE_FIELD_NUMBER = 16;
     /**
      * <pre>
-     * A reference to an issue associated with this trace.
+     * A reference to an issue associated with this trace (uses Feedback structure).
      * </pre>
      *
-     * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+     * <code>.mlflow.assessments.Feedback issue = 16;</code>
      * @return Whether the issue field is set.
      */
     @java.lang.Override
@@ -7012,32 +6350,32 @@ public final class Assessments {
     }
     /**
      * <pre>
-     * A reference to an issue associated with this trace.
+     * A reference to an issue associated with this trace (uses Feedback structure).
      * </pre>
      *
-     * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+     * <code>.mlflow.assessments.Feedback issue = 16;</code>
      * @return The issue.
      */
     @java.lang.Override
-    public org.mlflow.api.proto.Assessments.IssueReference getIssue() {
+    public org.mlflow.api.proto.Assessments.Feedback getIssue() {
       if (valueCase_ == 16) {
-         return (org.mlflow.api.proto.Assessments.IssueReference) value_;
+         return (org.mlflow.api.proto.Assessments.Feedback) value_;
       }
-      return org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance();
+      return org.mlflow.api.proto.Assessments.Feedback.getDefaultInstance();
     }
     /**
      * <pre>
-     * A reference to an issue associated with this trace.
+     * A reference to an issue associated with this trace (uses Feedback structure).
      * </pre>
      *
-     * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+     * <code>.mlflow.assessments.Feedback issue = 16;</code>
      */
     @java.lang.Override
-    public org.mlflow.api.proto.Assessments.IssueReferenceOrBuilder getIssueOrBuilder() {
+    public org.mlflow.api.proto.Assessments.FeedbackOrBuilder getIssueOrBuilder() {
       if (valueCase_ == 16) {
-         return (org.mlflow.api.proto.Assessments.IssueReference) value_;
+         return (org.mlflow.api.proto.Assessments.Feedback) value_;
       }
-      return org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance();
+      return org.mlflow.api.proto.Assessments.Feedback.getDefaultInstance();
     }
 
     public static final int RATIONALE_FIELD_NUMBER = 11;
@@ -7395,7 +6733,7 @@ public final class Assessments {
         output.writeBool(15, valid_);
       }
       if (valueCase_ == 16) {
-        output.writeMessage(16, (org.mlflow.api.proto.Assessments.IssueReference) value_);
+        output.writeMessage(16, (org.mlflow.api.proto.Assessments.Feedback) value_);
       }
       unknownFields.writeTo(output);
     }
@@ -7464,7 +6802,7 @@ public final class Assessments {
       }
       if (valueCase_ == 16) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(16, (org.mlflow.api.proto.Assessments.IssueReference) value_);
+          .computeMessageSize(16, (org.mlflow.api.proto.Assessments.Feedback) value_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -9372,13 +8710,13 @@ public final class Assessments {
       }
 
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.mlflow.api.proto.Assessments.IssueReference, org.mlflow.api.proto.Assessments.IssueReference.Builder, org.mlflow.api.proto.Assessments.IssueReferenceOrBuilder> issueBuilder_;
+          org.mlflow.api.proto.Assessments.Feedback, org.mlflow.api.proto.Assessments.Feedback.Builder, org.mlflow.api.proto.Assessments.FeedbackOrBuilder> issueBuilder_;
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        * @return Whether the issue field is set.
        */
       @java.lang.Override
@@ -9387,34 +8725,34 @@ public final class Assessments {
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        * @return The issue.
        */
       @java.lang.Override
-      public org.mlflow.api.proto.Assessments.IssueReference getIssue() {
+      public org.mlflow.api.proto.Assessments.Feedback getIssue() {
         if (issueBuilder_ == null) {
           if (valueCase_ == 16) {
-            return (org.mlflow.api.proto.Assessments.IssueReference) value_;
+            return (org.mlflow.api.proto.Assessments.Feedback) value_;
           }
-          return org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance();
+          return org.mlflow.api.proto.Assessments.Feedback.getDefaultInstance();
         } else {
           if (valueCase_ == 16) {
             return issueBuilder_.getMessage();
           }
-          return org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance();
+          return org.mlflow.api.proto.Assessments.Feedback.getDefaultInstance();
         }
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        */
-      public Builder setIssue(org.mlflow.api.proto.Assessments.IssueReference value) {
+      public Builder setIssue(org.mlflow.api.proto.Assessments.Feedback value) {
         if (issueBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -9429,13 +8767,13 @@ public final class Assessments {
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        */
       public Builder setIssue(
-          org.mlflow.api.proto.Assessments.IssueReference.Builder builderForValue) {
+          org.mlflow.api.proto.Assessments.Feedback.Builder builderForValue) {
         if (issueBuilder_ == null) {
           value_ = builderForValue.build();
           onChanged();
@@ -9447,16 +8785,16 @@ public final class Assessments {
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        */
-      public Builder mergeIssue(org.mlflow.api.proto.Assessments.IssueReference value) {
+      public Builder mergeIssue(org.mlflow.api.proto.Assessments.Feedback value) {
         if (issueBuilder_ == null) {
           if (valueCase_ == 16 &&
-              value_ != org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance()) {
-            value_ = org.mlflow.api.proto.Assessments.IssueReference.newBuilder((org.mlflow.api.proto.Assessments.IssueReference) value_)
+              value_ != org.mlflow.api.proto.Assessments.Feedback.getDefaultInstance()) {
+            value_ = org.mlflow.api.proto.Assessments.Feedback.newBuilder((org.mlflow.api.proto.Assessments.Feedback) value_)
                 .mergeFrom(value).buildPartial();
           } else {
             value_ = value;
@@ -9473,10 +8811,10 @@ public final class Assessments {
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        */
       public Builder clearIssue() {
         if (issueBuilder_ == null) {
@@ -9496,49 +8834,49 @@ public final class Assessments {
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        */
-      public org.mlflow.api.proto.Assessments.IssueReference.Builder getIssueBuilder() {
+      public org.mlflow.api.proto.Assessments.Feedback.Builder getIssueBuilder() {
         return getIssueFieldBuilder().getBuilder();
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        */
       @java.lang.Override
-      public org.mlflow.api.proto.Assessments.IssueReferenceOrBuilder getIssueOrBuilder() {
+      public org.mlflow.api.proto.Assessments.FeedbackOrBuilder getIssueOrBuilder() {
         if ((valueCase_ == 16) && (issueBuilder_ != null)) {
           return issueBuilder_.getMessageOrBuilder();
         } else {
           if (valueCase_ == 16) {
-            return (org.mlflow.api.proto.Assessments.IssueReference) value_;
+            return (org.mlflow.api.proto.Assessments.Feedback) value_;
           }
-          return org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance();
+          return org.mlflow.api.proto.Assessments.Feedback.getDefaultInstance();
         }
       }
       /**
        * <pre>
-       * A reference to an issue associated with this trace.
+       * A reference to an issue associated with this trace (uses Feedback structure).
        * </pre>
        *
-       * <code>.mlflow.assessments.IssueReference issue = 16;</code>
+       * <code>.mlflow.assessments.Feedback issue = 16;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.mlflow.api.proto.Assessments.IssueReference, org.mlflow.api.proto.Assessments.IssueReference.Builder, org.mlflow.api.proto.Assessments.IssueReferenceOrBuilder> 
+          org.mlflow.api.proto.Assessments.Feedback, org.mlflow.api.proto.Assessments.Feedback.Builder, org.mlflow.api.proto.Assessments.FeedbackOrBuilder> 
           getIssueFieldBuilder() {
         if (issueBuilder_ == null) {
           if (!(valueCase_ == 16)) {
-            value_ = org.mlflow.api.proto.Assessments.IssueReference.getDefaultInstance();
+            value_ = org.mlflow.api.proto.Assessments.Feedback.getDefaultInstance();
           }
           issueBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
-              org.mlflow.api.proto.Assessments.IssueReference, org.mlflow.api.proto.Assessments.IssueReference.Builder, org.mlflow.api.proto.Assessments.IssueReferenceOrBuilder>(
-                  (org.mlflow.api.proto.Assessments.IssueReference) value_,
+              org.mlflow.api.proto.Assessments.Feedback, org.mlflow.api.proto.Assessments.Feedback.Builder, org.mlflow.api.proto.Assessments.FeedbackOrBuilder>(
+                  (org.mlflow.api.proto.Assessments.Feedback) value_,
                   getParentForChildren(),
                   isClean());
           value_ = null;
@@ -10238,11 +9576,6 @@ public final class Assessments {
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_mlflow_assessments_Feedback_fieldAccessorTable;
   private static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_mlflow_assessments_IssueReference_descriptor;
-  private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_mlflow_assessments_IssueReference_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_mlflow_assessments_Assessment_descriptor;
   private static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -10278,25 +9611,24 @@ public final class Assessments {
       "ialization_format\030\001 \001(\t\022\r\n\005value\030\002 \001(\t\"e" +
       "\n\010Feedback\022%\n\005value\030\002 \001(\0132\026.google.proto" +
       "buf.Value\0222\n\005error\030\003 \001(\0132#.mlflow.assess" +
-      "ments.AssessmentError\"*\n\016IssueReference\022" +
-      "\030\n\nissue_name\030\001 \001(\tB\004\370\206\031\001\"\216\005\n\nAssessment" +
-      "\022\025\n\rassessment_id\030\001 \001(\t\022\035\n\017assessment_na" +
-      "me\030\002 \001(\tB\004\370\206\031\001\022\020\n\010trace_id\030\003 \001(\t\022\017\n\007span" +
-      "_id\030\004 \001(\t\0224\n\006source\030\005 \001(\0132$.mlflow.asses" +
-      "sments.AssessmentSource\022/\n\013create_time\030\006" +
-      " \001(\0132\032.google.protobuf.Timestamp\0224\n\020last" +
-      "_update_time\030\007 \001(\0132\032.google.protobuf.Tim" +
-      "estamp\0220\n\010feedback\030\t \001(\0132\034.mlflow.assess" +
-      "ments.FeedbackH\000\0226\n\013expectation\030\n \001(\0132\037." +
-      "mlflow.assessments.ExpectationH\000\0223\n\005issu" +
-      "e\030\020 \001(\0132\".mlflow.assessments.IssueRefere" +
-      "nceH\000\022\021\n\trationale\030\013 \001(\t\0226\n\005error\030\014 \001(\0132" +
-      "#.mlflow.assessments.AssessmentErrorB\002\030\001" +
-      "\022>\n\010metadata\030\r \003(\0132,.mlflow.assessments." +
-      "Assessment.MetadataEntry\022\021\n\toverrides\030\016 " +
-      "\001(\t\022\023\n\005valid\030\017 \001(\010:\004true\032/\n\rMetadataEntr" +
-      "y\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001B\007\n\005val" +
-      "ueB\031\n\024org.mlflow.api.proto\220\001\001"
+      "ments.AssessmentError\"\210\005\n\nAssessment\022\025\n\r" +
+      "assessment_id\030\001 \001(\t\022\035\n\017assessment_name\030\002" +
+      " \001(\tB\004\370\206\031\001\022\020\n\010trace_id\030\003 \001(\t\022\017\n\007span_id\030" +
+      "\004 \001(\t\0224\n\006source\030\005 \001(\0132$.mlflow.assessmen" +
+      "ts.AssessmentSource\022/\n\013create_time\030\006 \001(\013" +
+      "2\032.google.protobuf.Timestamp\0224\n\020last_upd" +
+      "ate_time\030\007 \001(\0132\032.google.protobuf.Timesta" +
+      "mp\0220\n\010feedback\030\t \001(\0132\034.mlflow.assessment" +
+      "s.FeedbackH\000\0226\n\013expectation\030\n \001(\0132\037.mlfl" +
+      "ow.assessments.ExpectationH\000\022-\n\005issue\030\020 " +
+      "\001(\0132\034.mlflow.assessments.FeedbackH\000\022\021\n\tr" +
+      "ationale\030\013 \001(\t\0226\n\005error\030\014 \001(\0132#.mlflow.a" +
+      "ssessments.AssessmentErrorB\002\030\001\022>\n\010metada" +
+      "ta\030\r \003(\0132,.mlflow.assessments.Assessment" +
+      ".MetadataEntry\022\021\n\toverrides\030\016 \001(\t\022\023\n\005val" +
+      "id\030\017 \001(\010:\004true\032/\n\rMetadataEntry\022\013\n\003key\030\001" +
+      " \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001B\007\n\005valueB\031\n\024org." +
+      "mlflow.api.proto\220\001\001"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -10335,14 +9667,8 @@ public final class Assessments {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_mlflow_assessments_Feedback_descriptor,
         new java.lang.String[] { "Value", "Error", });
-    internal_static_mlflow_assessments_IssueReference_descriptor =
-      getDescriptor().getMessageTypes().get(4);
-    internal_static_mlflow_assessments_IssueReference_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_mlflow_assessments_IssueReference_descriptor,
-        new java.lang.String[] { "IssueName", });
     internal_static_mlflow_assessments_Assessment_descriptor =
-      getDescriptor().getMessageTypes().get(5);
+      getDescriptor().getMessageTypes().get(4);
     internal_static_mlflow_assessments_Assessment_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_mlflow_assessments_Assessment_descriptor,

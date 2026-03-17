@@ -473,16 +473,15 @@ def test_log_issue(trace_id, tracking_uri):
     assessment = trace.info.assessments[0]
     assert isinstance(assessment, IssueReference)
     assert assessment.trace_id == trace_id
-    assert assessment.name == issue.issue_id
-    assert assessment.issue_id == issue.issue_id
-    assert assessment.issue_name == "timeout_error"
+    assert assessment.name == "timeout_error"
+    assert assessment.value == issue.issue_id
     assert assessment.span_id is None
     assert assessment.source == _CODE_ASSESSMENT_SOURCE
     assert assessment.create_time_ms is not None
     assert assessment.last_update_time_ms is not None
-    assert assessment.issue.issue_name == "timeout_error"
     assert assessment.rationale == "Request exceeded 30 second timeout"
-    assert assessment.metadata == {"severity": "high", "affected_count": "150"}
+    assert assessment.metadata["severity"] == "high"
+    assert assessment.metadata["affected_count"] == "150"
 
 
 def test_log_issue_default_source(trace_id, tracking_uri):
@@ -507,9 +506,10 @@ def test_log_issue_default_source(trace_id, tracking_uri):
     trace = mlflow.get_trace(trace_id)
     assert len(trace.info.assessments) == 1
     assessment = trace.info.assessments[0]
-    assert assessment.name == issue.issue_id
-    assert assessment.issue_id == issue.issue_id
-    assert assessment.issue_name == "connection_issue"
+    assert isinstance(assessment, Feedback)
+    assert isinstance(assessment, IssueReference)
+    assert assessment.name == "connection_issue"
+    assert assessment.value == issue.issue_id
     assert assessment.trace_id == trace_id
     assert assessment.source.source_type == AssessmentSourceType.LLM_JUDGE
     assert assessment.source.source_id == "default"
@@ -542,13 +542,15 @@ def test_log_issue_with_run_id_and_span_id(tracking_uri):
     trace = mlflow.get_trace(span.trace_id)
     assert len(trace.info.assessments) == 1
     assessment = trace.info.assessments[0]
-    assert assessment.issue_id == issue.issue_id
-    assert assessment.issue_name == "data_quality_issue"
+    assert isinstance(assessment, IssueReference)
+    assert assessment.value == issue.issue_id
+    assert assessment.name == "data_quality_issue"
     assert assessment.trace_id == span.trace_id
     assert assessment.span_id == span.span_id
     assert assessment.source == _LLM_ASSESSMENT_SOURCE
     assert assessment.rationale == "Input data contains missing values in critical fields"
-    assert assessment.metadata == {"category": "data", "priority": "high"}
+    assert assessment.metadata["category"] == "data"
+    assert assessment.metadata["priority"] == "high"
 
 
 def test_log_issue_without_issue_name(trace_id, tracking_uri):
@@ -571,8 +573,10 @@ def test_log_issue_without_issue_name(trace_id, tracking_uri):
     )
     trace = mlflow.get_trace(trace_id)
     assessment = trace.info.assessments[0]
-    assert assessment.issue_id == issue.issue_id
-    assert assessment.issue_name == "timeout_error"
+    assert isinstance(assessment, Feedback)
+    assert isinstance(assessment, IssueReference)
+    assert assessment.value == issue.issue_id
+    assert assessment.name == "timeout_error"
 
     fetched_issue = tracing_client._get_issue(issue.issue_id)
     assert fetched_issue.name == issue.name
@@ -830,8 +834,8 @@ def test_log_issue_reference(trace_id, tracking_uri):
     )
 
     issue_ref = IssueReference(
-        issue_id=issue.issue_id,
-        issue_name="timeout_error",
+        name="timeout_error",
+        value=issue.issue_id,
         source=_CODE_ASSESSMENT_SOURCE,
         metadata={"severity": "high", "affected_count": "150"},
     )
@@ -840,25 +844,26 @@ def test_log_issue_reference(trace_id, tracking_uri):
     trace = mlflow.get_trace(trace_id)
     assert len(trace.info.assessments) == 1
     assessment = trace.info.assessments[0]
+    assert isinstance(assessment, Feedback)
     assert isinstance(assessment, IssueReference)
     assert assessment.trace_id == trace_id
-    assert assessment.name == issue.issue_id
-    assert assessment.issue_id == issue.issue_id
-    assert assessment.issue_name == "timeout_error"
+    assert assessment.name == "timeout_error"
+    assert assessment.value == issue.issue_id
     assert assessment.span_id is None
     assert assessment.source == _CODE_ASSESSMENT_SOURCE
     assert assessment.create_time_ms is not None
     assert assessment.last_update_time_ms is not None
-    assert assessment.issue.issue_name == "timeout_error"
     assert assessment.expectation is None
-    assert assessment.feedback is None
-    assert assessment.metadata == {"severity": "high", "affected_count": "150"}
+    assert assessment.feedback is not None
+    assert assessment.metadata["severity"] == "high"
+    assert assessment.metadata["affected_count"] == "150"
 
 
 def test_log_issue_reference_invalid_parameters():
-    with pytest.raises(MlflowException, match=r"The `issue_id` field must be specified"):
-        IssueReference(
-            issue_id=None,
+    # Test that log_issue requires issue_id
+    with pytest.raises(TypeError, match=r"missing 1 required keyword-only argument: 'issue_id'"):
+        mlflow.log_issue(
+            trace_id="test-trace-id",
             issue_name="test_issue",
             source=_CODE_ASSESSMENT_SOURCE,
         )
@@ -876,43 +881,49 @@ def test_log_issue_reference_default_source(trace_id, tracking_uri):
         status=IssueStatus.PENDING,
     )
 
-    issue_ref = IssueReference(
+    # Use mlflow.log_issue without source (should default to LLM_JUDGE)
+    mlflow.log_issue(
+        trace_id=trace_id,
         issue_id=issue.issue_id,
         issue_name="connection_issue",
     )
-    mlflow.log_assessment(trace_id=trace_id, assessment=issue_ref)
 
     trace = mlflow.get_trace(trace_id)
     assert len(trace.info.assessments) == 1
     assessment = trace.info.assessments[0]
-    assert assessment.name == issue.issue_id
-    assert assessment.issue_name == "connection_issue"
+    assert isinstance(assessment, Feedback)
+    assert isinstance(assessment, IssueReference)
+    assert assessment.name == "connection_issue"
     assert assessment.trace_id == trace_id
-    assert assessment.issue_id == issue.issue_id
+    assert assessment.value == issue.issue_id
     assert assessment.source.source_type == AssessmentSourceType.LLM_JUDGE
     assert assessment.source.source_id == "default"
 
 
 def test_get_issue_reference_assessment(trace_id):
+    # Create an IssueReference
+    issue_metadata = {
+        "category": "latency",
+    }
     issue_ref = IssueReference(
-        issue_id="iss-55555",
-        issue_name="performance_issue",
-        metadata={"category": "latency"},
+        name="performance_issue",
+        value="iss-55555",
+        metadata=issue_metadata,
     )
     assessment_id = mlflow.log_assessment(trace_id=trace_id, assessment=issue_ref).assessment_id
 
     result = mlflow.get_assessment(trace_id, assessment_id)
 
     assert isinstance(result, IssueReference)
-    assert result.name == "iss-55555"
-    assert result.issue_name == "performance_issue"
+    assert isinstance(result, IssueReference)
+    assert result.name == "performance_issue"
     assert result.trace_id == trace_id
-    assert result.issue_id == "iss-55555"
-    assert result.source.source_type == AssessmentSourceType.LLM_JUDGE
+    assert result.value == "iss-55555"
+    assert result.source.source_type == AssessmentSourceType.CODE
     assert result.source.source_id == "default"
     assert result.create_time_ms is not None
     assert result.last_update_time_ms is not None
-    assert result.metadata == {"category": "latency"}
+    assert result.metadata["category"] == "latency"
 
 
 def test_log_multiple_assessment_types(trace_id):
@@ -930,9 +941,10 @@ def test_log_multiple_assessment_types(trace_id):
     )
     mlflow.log_assessment(trace_id=trace_id, assessment=expectation)
 
+    # Create an issue reference
     issue_ref = IssueReference(
-        issue_id="iss-11111",
-        issue_name="data_quality_issue",
+        name="data_quality_issue",
+        value="iss-11111",
         source=_CODE_ASSESSMENT_SOURCE,
     )
     mlflow.log_assessment(trace_id=trace_id, assessment=issue_ref)
@@ -942,12 +954,13 @@ def test_log_multiple_assessment_types(trace_id):
 
     assessments_by_type = {}
     for a in trace.info.assessments:
-        if isinstance(a, Feedback):
-            assessments_by_type["feedback"] = a
-        elif isinstance(a, Expectation):
+        if isinstance(a, Expectation):
             assessments_by_type["expectation"] = a
-        elif isinstance(a, IssueReference):
-            assessments_by_type["issue"] = a
+        elif isinstance(a, Feedback):
+            if isinstance(a, IssueReference):
+                assessments_by_type["issue"] = a
+            else:
+                assessments_by_type["feedback"] = a
 
     assert assessments_by_type["feedback"].name == "accuracy"
     assert assessments_by_type["feedback"].value == 0.95
@@ -955,6 +968,5 @@ def test_log_multiple_assessment_types(trace_id):
     assert assessments_by_type["expectation"].name == "expected_output"
     assert assessments_by_type["expectation"].value == "MLflow"
 
-    assert assessments_by_type["issue"].name == "iss-11111"
-    assert assessments_by_type["issue"].issue_name == "data_quality_issue"
-    assert assessments_by_type["issue"].issue_id == "iss-11111"
+    assert assessments_by_type["issue"].name == "data_quality_issue"
+    assert assessments_by_type["issue"].value == "iss-11111"
