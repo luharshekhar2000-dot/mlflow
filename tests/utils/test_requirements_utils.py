@@ -570,6 +570,31 @@ def test_check_requirement_satisfied_checks_matching_marker():
     assert result is not None
 
 
+def test_check_requirement_satisfied_skips_on_marker_evaluation_error():
+    from packaging.markers import UndefinedEnvironmentName
+    from packaging.requirements import Requirement as PackagingRequirement
+
+    # Create a requirement whose marker raises UndefinedEnvironmentName on evaluate().
+    # In practice, packaging validates markers at parse time, so this exception can only
+    # occur in unusual runtime conditions (e.g. a patched or corrupted environment dict).
+    req_with_bad_marker = PackagingRequirement("numpy==999.0.0 ; python_full_version >= '3.0'")
+    req_with_bad_marker.marker.evaluate = mock.Mock(
+        side_effect=UndefinedEnvironmentName("unknown_var")
+    )
+
+    with (
+        mock.patch(
+            "mlflow.utils.requirements_utils.Requirement",
+            return_value=req_with_bad_marker,
+        ),
+        mock.patch("mlflow.utils.requirements_utils._logger.debug") as mock_debug,
+    ):
+        result = _check_requirement_satisfied("numpy==999.0.0 ; python_full_version >= '3.0'")
+        assert result is None
+        mock_debug.assert_called_once()
+        assert "Failed to evaluate environment marker" in mock_debug.call_args[0][0]
+
+
 def test_warn_dependency_requirement_mismatches_ignores_non_matching_markers():
     """
     Tests that warn_dependency_requirement_mismatches does not generate warnings for
@@ -615,19 +640,21 @@ def test_warn_dependency_requirement_mismatches_ignores_non_matching_markers():
     # Verify that a requirement with a matching marker still generates a warning
     # when the version is wrong, to ensure non-matching markers truly are skipped
     # rather than all markers being ignored.
-    with mock.patch("mlflow.utils.requirements_utils._logger.warning") as mock_warning:
-        with mock.patch(
+    with (
+        mock.patch("mlflow.utils.requirements_utils._logger.warning") as mock_warning,
+        mock.patch(
             "mlflow.utils.requirements_utils._get_installed_version",
             return_value="999.99.22",
-        ):
-            warn_dependency_requirement_mismatches(
-                model_requirements=[
-                    # Non-matching marker: should be skipped regardless of version
-                    "numpy==999.99.99 ; python_full_version < '2.0'",
-                    # Matching marker with wrong version: should generate a warning
-                    f"numpy=={numpy_version} ; python_full_version >= '2.0'",
-                ]
-            )
+        ),
+    ):
+        warn_dependency_requirement_mismatches(
+            model_requirements=[
+                # Non-matching marker: should be skipped regardless of version
+                "numpy==999.99.99 ; python_full_version < '2.0'",
+                # Matching marker with wrong version: should generate a warning
+                f"numpy=={numpy_version} ; python_full_version >= '2.0'",
+            ]
+        )
         mock_warning.assert_called_once_with(
             AnyStringWith(f" - numpy (current: 999.99.22, required: numpy=={numpy_version}")
         )

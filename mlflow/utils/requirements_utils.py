@@ -17,6 +17,7 @@ from threading import Timer
 from typing import NamedTuple
 
 import importlib_metadata
+from packaging.markers import UndefinedComparison, UndefinedEnvironmentName
 from packaging.requirements import Requirement
 from packaging.version import InvalidVersion, Version
 
@@ -613,6 +614,17 @@ def _check_requirement_satisfied(requirement_str: str) -> _MismatchedPackageInfo
     as a package name and a set of version specifiers, and returns a `_MismatchedPackageInfo`
     object containing the mismatched package name, installed version, and requirement if the
     requirement is not satisfied. Otherwise, returns None.
+
+    Requirements with environment markers (e.g. ``; python_full_version >= "3.11"`` or
+    ``; sys_platform == "linux"``) are evaluated against the current environment.  If the
+    marker does **not** apply to the current environment the requirement is silently skipped,
+    so no false-positive warning is emitted.  This correctly handles ``requirements.txt``
+    files produced by ``uv export`` which may contain platform- or Python-version-specific
+    entries such as::
+
+        numpy==2.2.6; python_full_version < "3.11"
+        numpy==2.4.3; python_full_version >= "3.11"
+        nvidia-nccl-cu12==2.29.7; sys_platform == "linux"
     """
     try:
         req = Requirement(requirement_str)
@@ -621,8 +633,26 @@ def _check_requirement_satisfied(requirement_str: str) -> _MismatchedPackageInfo
         # Extracting the package name from the requirement string is not trivial,
         # so we skip the check.
         return None
-    if req.marker and not req.marker.evaluate():
-        return None
+    if req.marker:
+        try:
+            if not req.marker.evaluate():
+                # The environment marker does not apply to the current environment
+                # (e.g. a Linux-only package checked on macOS, or a Python 3.11+
+                # requirement evaluated on Python 3.10).  Skip the check to avoid
+                # false-positive dependency mismatch warnings.
+                return None
+        except (UndefinedComparison, UndefinedEnvironmentName):
+            # Marker evaluation can fail for malformed or unsupported marker
+            # expressions.  Skip the check rather than surfacing a confusing
+            # "unexpected error" warning to the user.
+            _logger.debug(
+                "Failed to evaluate environment marker %r for requirement %r. "
+                "Skipping the requirement check.",
+                str(req.marker),
+                requirement_str,
+                exc_info=True,
+            )
+            return None
 
     _init_packages_to_modules_map()
     pkg_name = req.name
@@ -663,6 +693,11 @@ def warn_dependency_requirement_mismatches(model_requirements: list[str]):
     """
     Inspects the model's dependencies and prints a warning if the current Python environment
     doesn't satisfy them.
+
+    Requirements whose environment markers do not apply to the current environment are silently
+    skipped.  This prevents false-positive warnings when a model was logged with ``uv``-detected
+    requirements that contain platform- or Python-version-specific entries (e.g. a requirement
+    restricted to ``sys_platform == "linux"`` will not trigger a warning on macOS).
     """
     # Suppress databricks-feature-lookup warning for feature store cases
     # Suppress databricks-chains, databricks-rag, and databricks-agents warnings for RAG
