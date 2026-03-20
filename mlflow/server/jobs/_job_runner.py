@@ -13,6 +13,7 @@ The job runner will:
 
 import logging
 import os
+import threading
 import time
 
 from mlflow.server import HUEY_STORAGE_PATH_ENV_VAR
@@ -32,15 +33,29 @@ if __name__ == "__main__":
 
     huey_store_path = os.environ[HUEY_STORAGE_PATH_ENV_VAR]
 
+    ready_events = []
+
     for job_name in _job_name_to_fn_fullname_map:
         try:
-            _launch_huey_consumer(job_name)
+            event = threading.Event()
+            _launch_huey_consumer(job_name, ready_event=event)
+            ready_events.append(event)
         except Exception as e:
             logging.warning(f"Launch Huey consumer for {job_name} jobs failed, root cause: {e!r}")
 
     # Launch dedicated consumer for periodic tasks
     # (periodic tasks are registered when the consumer starts up)
-    _launch_periodic_tasks_consumer()
+    periodic_event = threading.Event()
+    _launch_periodic_tasks_consumer(ready_event=periodic_event)
+    ready_events.append(periodic_event)
 
-    time.sleep(10)  # wait for huey consumer launching
+    deadline = time.monotonic() + 30
+    for event in ready_events:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or not event.wait(timeout=remaining):
+            logger.warning(
+                "Timed out waiting for a Huey consumer to start; "
+                "proceeding with _enqueue_unfinished_jobs anyway."
+            )
+            break
     _enqueue_unfinished_jobs(server_up_time)

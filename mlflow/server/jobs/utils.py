@@ -468,7 +468,7 @@ def _get_or_init_huey_instance(instance_key: str):
         return _huey_instance_map[instance_key]
 
 
-def _launch_huey_consumer(job_name: str) -> None:
+def _launch_huey_consumer(job_name: str, ready_event: threading.Event | None = None) -> None:
     _logger.debug(f"Starting huey consumer for job function {job_name}")
 
     fn_fullname = get_job_fn_fullname(job_name)
@@ -482,6 +482,7 @@ def _launch_huey_consumer(job_name: str) -> None:
     max_job_parallelism = job_fn._job_fn_metadata.max_workers
 
     def _huey_consumer_thread() -> None:
+        first = True
         while True:
             # start MLflow job runner process
             # Put it inside the loop to ensure the job runner process alive
@@ -489,6 +490,9 @@ def _launch_huey_consumer(job_name: str) -> None:
                 job_name,
                 max_job_parallelism,
             )
+            if first and ready_event is not None:
+                ready_event.set()
+                first = False
             job_runner_proc.wait()
             time.sleep(1)
 
@@ -500,7 +504,9 @@ def _launch_huey_consumer(job_name: str) -> None:
     ).start()
 
 
-def _launch_periodic_tasks_consumer() -> None:
+def _launch_periodic_tasks_consumer(
+    ready_event: threading.Event | None = None,
+) -> None:
     """
     Launch a dedicated Huey consumer for periodic tasks.
     This consumer runs scheduled tasks like the online scoring scheduler.
@@ -508,8 +514,12 @@ def _launch_periodic_tasks_consumer() -> None:
     _logger.debug("Starting dedicated Huey consumer for periodic tasks")
 
     def _huey_consumer_thread() -> None:
+        first = True
         while True:
             job_runner_proc = _start_periodic_tasks_consumer_proc()
+            if first and ready_event is not None:
+                ready_event.set()
+                first = False
             job_runner_proc.wait()
             time.sleep(1)
 
