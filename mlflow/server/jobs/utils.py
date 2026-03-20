@@ -486,13 +486,15 @@ def _launch_huey_consumer(job_name: str, ready_event: threading.Event) -> None:
         while True:
             # start MLflow job runner process
             # Put it inside the loop to ensure the job runner process alive
-            job_runner_proc = _start_huey_consumer_proc(
-                job_name,
-                max_job_parallelism,
-            )
-            if first:
-                ready_event.set()
-                first = False
+            try:
+                job_runner_proc = _start_huey_consumer_proc(
+                    job_name,
+                    max_job_parallelism,
+                )
+            finally:
+                if first:
+                    ready_event.set()
+                    first = False
             job_runner_proc.wait()
             time.sleep(1)
 
@@ -514,10 +516,12 @@ def _launch_periodic_tasks_consumer(ready_event: threading.Event) -> None:
     def _huey_consumer_thread() -> None:
         first = True
         while True:
-            job_runner_proc = _start_periodic_tasks_consumer_proc()
-            if first:
-                ready_event.set()
-                first = False
+            try:
+                job_runner_proc = _start_periodic_tasks_consumer_proc()
+            finally:
+                if first:
+                    ready_event.set()
+                    first = False
             job_runner_proc.wait()
             time.sleep(1)
 
