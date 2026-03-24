@@ -16,10 +16,10 @@
   <a href="https://github.com/mlflow/mlflow/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/mlflow/mlflow" alt="license"></a>
 </p>
 
-MLflow TypeScript SDK is a variant of the [MLflow Python SDK](https://github.com/mlflow/mlflow) that provides a TypeScript API for MLflow.
+MLflow Typescript SDK is a variant of the [MLflow Python SDK](https://github.com/mlflow/mlflow) that provides a TypeScript API for MLflow.
 
 > [!IMPORTANT]
-> MLflow TypeScript SDK is catching up with the Python SDK. Currently only support [Tracing]() and [Feedback Collection]() features. Please raise an issue in GitHub if you need a feature that is not supported.
+> MLflow Typescript SDK is catching up with the Python SDK. Currently only support [Tracing]() and [Feedback Collection]() features. Please raise an issue in Github if you need a feature that is not supported.
 
 ## Packages
 
@@ -35,7 +35,7 @@ npm install @mlflow/core
 ```
 
 > [!NOTE]
-> MLflow TypeScript SDK requires Node.js 22 or higher.
+> MLflow Typescript SDK requires Node.js 22 or higher.
 
 ## Quickstart
 
@@ -315,7 +315,7 @@ This comprehensive data capture enables you to create realistic test scenarios, 
 
 ## Documentation 📘
 
-Official documentation for MLflow TypeScript SDK can be found [here](https://mlflow.org/docs/latest/genai/tracing/quickstart).
+Official documentation for MLflow Typescript SDK can be found [here](https://mlflow.org/docs/latest/genai/tracing/quickstart).
 
 ## License
 
