@@ -6,7 +6,7 @@ from werkzeug.test import Client
 
 from mlflow.server import security
 from mlflow.server.fastapi_security import init_fastapi_security
-from mlflow.server.security_utils import is_allowed_host_header, is_api_endpoint
+from mlflow.server.security_utils import _strip_port, is_allowed_host_header, is_api_endpoint
 
 
 def test_default_allowed_hosts():
@@ -359,3 +359,67 @@ def test_fastapi_cors_allows_configured_origin(monkeypatch: pytest.MonkeyPatch):
         headers={"Host": "localhost", "Origin": "http://evil.com"},
     )
     assert response.headers.get("access-control-allow-origin") is None
+
+
+@pytest.mark.parametrize(
+    ("host", "expected"),
+    [
+        ("hostname", "hostname"),
+        ("hostname:5000", "hostname"),
+        ("192.168.1.1", "192.168.1.1"),
+        ("192.168.1.1:8080", "192.168.1.1"),
+        ("[::1]", "[::1]"),
+        ("[::1]:8080", "[::1]"),
+        ("mlflow.svc.cluster.local:5000", "mlflow.svc.cluster.local"),
+    ],
+)
+def test_strip_port(host, expected):
+    assert _strip_port(host) == expected
+
+
+@pytest.mark.parametrize(
+    ("allowed_hosts", "host_header", "expected"),
+    [
+        # Exact match with port in header should match bare hostname in allowed_hosts
+        (
+            ["mlflow-service.namespace.svc.cluster.local"],
+            "mlflow-service.namespace.svc.cluster.local:5000",
+            True,
+        ),
+        # Exact match without port still works
+        (
+            ["mlflow-service.namespace.svc.cluster.local"],
+            "mlflow-service.namespace.svc.cluster.local",
+            True,
+        ),
+        # Port in allowed_hosts is still respected for exact match
+        (["myhost:5000"], "myhost:5000", True),
+        # Wildcard pattern matches host+port
+        (["*.example.com"], "app.example.com:8080", True),
+        # IPv6 with port matches bare IPv6 allowed entry
+        (["[::1]"], "[::1]:9090", True),
+        # Unrelated host is rejected even with port
+        (["legit.com"], "evil.com:5000", False),
+    ],
+)
+def test_is_allowed_host_header_port_stripping(allowed_hosts, host_header, expected):
+    assert is_allowed_host_header(allowed_hosts, host_header) == expected
+
+
+@pytest.mark.parametrize(
+    ("host_header", "expected_status"),
+    [
+        ("mlflow-service.namespace.svc.cluster.local", 200),
+        ("mlflow-service.namespace.svc.cluster.local:5000", 200),
+        ("evil.com:5000", 403),
+    ],
+)
+def test_dns_rebinding_protection_with_port(
+    test_app, host_header, expected_status, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setenv("MLFLOW_SERVER_ALLOWED_HOSTS", "mlflow-service.namespace.svc.cluster.local")
+    security.init_security_middleware(test_app)
+    client = Client(test_app)
+
+    response = client.get("/test", headers={"Host": host_header})
+    assert response.status_code == expected_status

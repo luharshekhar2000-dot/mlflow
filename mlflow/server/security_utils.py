@@ -131,8 +131,26 @@ def is_api_endpoint(path: str) -> bool:
     ) and path not in TEST_ENDPOINTS
 
 
+def _strip_port(host: str) -> str:
+    """Strip the port from a Host header value, handling IPv6 bracket notation."""
+    # IPv6 with port: [::1]:8080 -> [::1]
+    if host.startswith("["):
+        bracket_end = host.find("]")
+        if bracket_end != -1:
+            return host[: bracket_end + 1]
+    # IPv4/hostname with port: hostname:8080 -> hostname
+    if ":" in host:
+        return host.rsplit(":", 1)[0]
+    return host
+
+
 def is_allowed_host_header(allowed_hosts: list[str], host: str) -> bool:
-    """Validate if the host header matches allowed patterns."""
+    """Validate if the host header matches allowed patterns.
+
+    When the Host header includes a port (e.g. ``hostname:5000``), the hostname
+    portion is extracted and matched separately so that an ``allowed_hosts`` entry
+    of ``hostname`` (without port) still accepts the request.
+    """
     if not host:
         return False
 
@@ -140,8 +158,13 @@ def is_allowed_host_header(allowed_hosts: list[str], host: str) -> bool:
     if "*" in allowed_hosts:
         return True
 
+    hostname = _strip_port(host)
+
+    def _matches(candidate: str, pattern: str) -> bool:
+        return fnmatch.fnmatch(candidate, pattern) if "*" in pattern else candidate == pattern
+
     return any(
-        fnmatch.fnmatch(host, allowed) if "*" in allowed else host == allowed
+        _matches(host, allowed) or (hostname != host and _matches(hostname, allowed))
         for allowed in allowed_hosts
     )
 
