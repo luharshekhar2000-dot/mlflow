@@ -402,6 +402,62 @@ def _get_provider_instance(provider: str, model: str) -> "BaseProvider":
         )
         return _MlflowGatewayProvider(route_config, extra_headers=gw_config.extra_headers)
 
+    elif provider == Provider.GROQ:
+        from mlflow.gateway.config import _OpenAICompatibleConfig
+        from mlflow.gateway.providers.groq import GroqProvider
+
+        config = _OpenAICompatibleConfig(api_key=os.environ.get("GROQ_API_KEY"))
+        return GroqProvider(_get_route_config(config))
+
+    elif provider == Provider.DEEPSEEK:
+        from mlflow.gateway.config import _OpenAICompatibleConfig
+        from mlflow.gateway.providers.deepseek import DeepSeekProvider
+
+        config = _OpenAICompatibleConfig(api_key=os.environ.get("DEEPSEEK_API_KEY"))
+        return DeepSeekProvider(_get_route_config(config))
+
+    elif provider == Provider.XAI:
+        from mlflow.gateway.config import _OpenAICompatibleConfig
+        from mlflow.gateway.providers.xai import XAIProvider
+
+        config = _OpenAICompatibleConfig(api_key=os.environ.get("XAI_API_KEY"))
+        return XAIProvider(_get_route_config(config))
+
+    elif provider == Provider.OPENROUTER:
+        from mlflow.gateway.config import _OpenAICompatibleConfig
+        from mlflow.gateway.providers.openrouter import OpenRouterProvider
+
+        config = _OpenAICompatibleConfig(api_key=os.environ.get("OPENROUTER_API_KEY"))
+        return OpenRouterProvider(_get_route_config(config))
+
+    elif provider == Provider.OLLAMA:
+        from mlflow.gateway.providers.ollama import OllamaConfig, OllamaProvider
+
+        config = OllamaConfig(api_key=os.environ.get("OLLAMA_API_KEY", "ollama"))
+        return OllamaProvider(_get_route_config(config))
+
+    elif provider == Provider.DATABRICKS:
+        from mlflow.gateway.providers.databricks import DatabricksConfig, DatabricksProvider
+
+        config = DatabricksConfig(
+            host=os.environ.get("DATABRICKS_HOST"),
+            token=os.environ.get("DATABRICKS_TOKEN"),
+            client_id=os.environ.get("DATABRICKS_CLIENT_ID"),
+            client_secret=os.environ.get("DATABRICKS_CLIENT_SECRET"),
+        )
+        return DatabricksProvider(_get_route_config(config))
+
+    elif provider == Provider.VERTEX_AI:
+        from mlflow.gateway.config import VertexAIConfig
+        from mlflow.gateway.providers.vertex_ai import VertexAIProvider
+
+        config = VertexAIConfig(
+            vertex_project=os.environ.get("VERTEX_PROJECT", ""),
+            vertex_location=os.environ.get("VERTEX_LOCATION"),
+            vertex_credentials=os.environ.get("VERTEX_CREDENTIALS"),
+        )
+        return VertexAIProvider(_get_route_config(config))
+
     raise MlflowException(f"Provider '{provider}' is not supported for evaluation.")
 
 
