@@ -1,9 +1,16 @@
-from typing import Any, Literal, get_args, get_origin
+import types
+from typing import Any, Literal, Union, get_args, get_origin
 
 from mlflow.genai.judges.base import Judge
 from mlflow.genai.judges.instructions_judge import InstructionsJudge
 from mlflow.telemetry.events import MakeJudgeEvent
 from mlflow.telemetry.track import record_usage_event
+
+
+def _format_type(t: Any) -> str:
+    if isinstance(t, type):
+        return t.__name__
+    return str(t)
 
 
 def _is_optional_pb_value_type(t: Any, pb_value_types: tuple[type, ...]) -> bool:
@@ -13,6 +20,9 @@ def _is_optional_pb_value_type(t: Any, pb_value_types: tuple[type, ...]) -> bool
     Works for both ``typing.Optional[T]`` and the Python 3.10+ ``T | None`` syntax because
     ``get_args`` returns ``(T, NoneType)`` for both forms.
     """
+    origin = get_origin(t)
+    if origin is not Union and origin is not types.UnionType:
+        return False
     args = get_args(t)
     if not args:
         return False
@@ -71,7 +81,7 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
                 from mlflow.exceptions import MlflowException
 
                 raise MlflowException.invalid_parameter_value(
-                    f"dict key type must be str, got {key_type}"
+                    f"dict key type must be str, got {_format_type(key_type)}"
                 )
             # Value must be a PbValueType or Optional[PbValueType]
             if value_type not in pb_value_types and not _is_optional_pb_value_type(
@@ -81,7 +91,7 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
 
                 raise MlflowException.invalid_parameter_value(
                     "The `feedback_value_type` argument does not support a dict type "
-                    f"with non-primitive values, but got {value_type}"
+                    f"with non-primitive values, but got {_format_type(value_type)}"
                 )
             return
 
@@ -98,7 +108,7 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
 
                 raise MlflowException.invalid_parameter_value(
                     "The `feedback_value_type` argument does not support a list type "
-                    f"with non-primitive values, but got {element_type}"
+                    f"with non-primitive values, but got {_format_type(element_type)}"
                 )
             return
 

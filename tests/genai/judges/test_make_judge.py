@@ -3158,6 +3158,45 @@ def test_make_judge_validates_optional_feedback_value_type():
             feedback_value_type=list[int | str],
         )
 
+    # Verify serialization/round-trip for optional dict type
+    judge_dict_optional = make_judge(
+        name="dict_optional_int_round_trip",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=dict[str, typing.Optional[int]],  # noqa: UP045
+    )
+    serialized_dict_optional = judge_dict_optional.model_dump()
+    assert serialized_dict_optional["instructions_judge_pydantic_data"]["feedback_value_type"] == {
+        "type": "object",
+        "additionalProperties": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+        "title": "Result",
+    }
+    restored_dict = Scorer.model_validate(serialized_dict_optional)
+    assert typing.get_origin(restored_dict._feedback_value_type) is dict
+    restored_dict_key, restored_dict_val = typing.get_args(restored_dict._feedback_value_type)
+    assert restored_dict_key is str
+    assert typing.get_origin(restored_dict_val) is typing.Union
+    assert set(typing.get_args(restored_dict_val)) == {int, type(None)}
+
+    # Verify serialization/round-trip for optional list type
+    judge_list_optional = make_judge(
+        name="list_optional_str_round_trip",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=list[typing.Optional[str]],  # noqa: UP045
+    )
+    serialized_list_optional = judge_list_optional.model_dump()
+    assert serialized_list_optional["instructions_judge_pydantic_data"]["feedback_value_type"] == {
+        "type": "array",
+        "items": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+        "title": "Result",
+    }
+    restored_list = Scorer.model_validate(serialized_list_optional)
+    assert typing.get_origin(restored_list._feedback_value_type) is list
+    (restored_list_elem,) = typing.get_args(restored_list._feedback_value_type)
+    assert typing.get_origin(restored_list_elem) is typing.Union
+    assert set(typing.get_args(restored_list_elem)) == {str, type(None)}
+
 
 def test_make_judge_with_default_feedback_value_type(monkeypatch):
     # Test that feedback_value_type defaults to str when omitted

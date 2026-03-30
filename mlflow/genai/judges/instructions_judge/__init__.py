@@ -759,7 +759,17 @@ class InstructionsJudge(Judge):
         Handles plain ``{"type": "..."}`` schemas and ``anyOf``-with-null schemas
         produced by Pydantic for ``Optional[T]`` / ``T | None`` types.
         """
+        if not isinstance(schema, dict):
+            raise MlflowException.invalid_parameter_value(
+                f"Expected a dict for {context} schema, got {type(schema).__name__}: {schema}"
+            )
+
         if "type" in schema:
+            if not isinstance(schema["type"], str):
+                raise MlflowException.invalid_parameter_value(
+                    f"Expected a string for {context} 'type', "
+                    f"got {type(schema['type']).__name__}: {schema['type']}"
+                )
             t = type_map.get(schema["type"])
             if t is None:
                 raise MlflowException.invalid_parameter_value(
@@ -768,8 +778,15 @@ class InstructionsJudge(Judge):
             return t, False
 
         if "anyOf" in schema:
-            non_null = [s for s in schema["anyOf"] if s.get("type") != "null"]
-            if len(non_null) == 1 and "type" in non_null[0]:
+            if not isinstance(schema["anyOf"], list):
+                raise MlflowException.invalid_parameter_value(
+                    f"Expected a list for {context} 'anyOf', "
+                    f"got {type(schema['anyOf']).__name__}: {schema['anyOf']}"
+                )
+            non_null = [
+                s for s in schema["anyOf"] if isinstance(s, dict) and s.get("type") != "null"
+            ]
+            if len(non_null) == 1 and isinstance(non_null[0], dict) and "type" in non_null[0]:
                 t = type_map.get(non_null[0]["type"])
                 if t is not None:
                     return t, True
