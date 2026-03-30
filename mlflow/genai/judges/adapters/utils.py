@@ -16,6 +16,7 @@ from mlflow.gateway.constants import (
     MLFLOW_GATEWAY_CLIENT_QUERY_RETRY_CODES,
     MLFLOW_GATEWAY_ROUTE_TIMEOUT_SECONDS,
 )
+from mlflow.metrics.genai.model_utils import _parse_model_uri
 from mlflow.protos.databricks_pb2 import BAD_REQUEST, INTERNAL_ERROR
 
 _DATABRICKS_PROVIDERS = {"databricks", "endpoints"}
@@ -60,9 +61,6 @@ def get_adapter(
         if provider in _DATABRICKS_PROVIDERS:
             telemetry = DatabricksTelemetryRecorder()
 
-    # TODO: Reorder to [Databricks, Gateway, LiteLLM] to prioritize native
-    # providers over litellm. Requires migrating ~50 tests that mock
-    # litellm.completion to mock at the gateway HTTP level instead.
     adapters = [
         DatabricksManagedJudgeAdapter,
         LiteLLMAdapter,
