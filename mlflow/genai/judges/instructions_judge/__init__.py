@@ -1,7 +1,7 @@
 import json
 import logging
 from dataclasses import asdict
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 from urllib.parse import urlparse, urlunparse
 
 import pydantic
@@ -736,7 +736,9 @@ class InstructionsJudge(Judge):
         - PbValueType: float, int, str, bool
         - Literal types (as enum)
         - dict[str, PbValueType] (as object with additionalProperties)
+        - dict[str, Optional[PbValueType]] (anyOf-with-null additionalProperties)
         - list[PbValueType] (as array with items)
+        - list[Optional[PbValueType]] (anyOf-with-null items)
 
         Returns a JSON Schema representation of the type.
         """
@@ -747,6 +749,40 @@ class InstructionsJudge(Judge):
         return model.model_json_schema()["properties"]["result"]
 
     @staticmethod
+    def _resolve_primitive_schema_type(
+        schema: dict[str, Any],
+        type_map: dict[str, type],
+        context: str,
+    ) -> tuple[type, bool]:
+        """Return (python_type, is_optional) from a JSON Schema primitive schema.
+
+        Handles plain ``{"type": "..."}`` schemas and ``anyOf``-with-null schemas
+        produced by Pydantic for ``Optional[T]`` / ``T | None`` types.
+        """
+        if "type" in schema:
+            t = type_map.get(schema["type"])
+            if t is None:
+                raise MlflowException.invalid_parameter_value(
+                    f"Unsupported {context} type: {schema['type']}"
+                )
+            return t, False
+
+        if "anyOf" in schema:
+            non_null = [s for s in schema["anyOf"] if s.get("type") != "null"]
+            if len(non_null) == 1 and "type" in non_null[0]:
+                t = type_map.get(non_null[0]["type"])
+                if t is not None:
+                    return t, True
+            raise MlflowException.invalid_parameter_value(
+                f"Unsupported {context} schema: {schema}. "
+                f"Optional schemas must use exactly one non-null primitive type."
+            )
+
+        raise MlflowException.invalid_parameter_value(
+            f"{context} schema missing 'type' field: {schema}"
+        )
+
+    @staticmethod
     def _deserialize_feedback_value_type(serialized: dict[str, Any]) -> type:
         """
         Deserialize a feedback_value_type from JSON Schema format.
@@ -755,7 +791,9 @@ class InstructionsJudge(Judge):
         - PbValueType: str, int, float, bool
         - Literal types (from enum)
         - dict[str, PbValueType] (from object with additionalProperties)
+        - dict[str, Optional[PbValueType]] (anyOf-with-null additionalProperties)
         - list[PbValueType] (from array with items)
+        - list[Optional[PbValueType]] (anyOf-with-null items)
         """
         if not isinstance(serialized, dict) or "type" not in serialized:
             raise MlflowException.invalid_parameter_value(
@@ -791,16 +829,11 @@ class InstructionsJudge(Judge):
                 raise MlflowException.invalid_parameter_value(
                     f"Object type missing 'additionalProperties' field: {serialized}"
                 )
-            value_schema = serialized["additionalProperties"]
-            if "type" not in value_schema:
-                raise MlflowException.invalid_parameter_value(
-                    f"additionalProperties missing 'type' field: {serialized}"
-                )
-            value_type = type_map.get(value_schema["type"])
-            if value_type is None:
-                raise MlflowException.invalid_parameter_value(
-                    f"Unsupported value type in object: {value_schema['type']}"
-                )
+            value_type, is_optional = InstructionsJudge._resolve_primitive_schema_type(
+                serialized["additionalProperties"], type_map, "additionalProperties value"
+            )
+            if is_optional:
+                return dict[str, Optional[value_type]]
             return dict[str, value_type]
 
         # Handle array (list) type
@@ -809,16 +842,11 @@ class InstructionsJudge(Judge):
                 raise MlflowException.invalid_parameter_value(
                     f"Array type missing 'items' field: {serialized}"
                 )
-            items_schema = serialized["items"]
-            if "type" not in items_schema:
-                raise MlflowException.invalid_parameter_value(
-                    f"items missing 'type' field: {serialized}"
-                )
-            element_type = type_map.get(items_schema["type"])
-            if element_type is None:
-                raise MlflowException.invalid_parameter_value(
-                    f"Unsupported element type in array: {items_schema['type']}"
-                )
+            element_type, is_optional = InstructionsJudge._resolve_primitive_schema_type(
+                serialized["items"], type_map, "array element"
+            )
+            if is_optional:
+                return list[Optional[element_type]]
             return list[element_type]
 
         # Unsupported type
