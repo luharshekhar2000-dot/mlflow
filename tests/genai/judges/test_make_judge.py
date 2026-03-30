@@ -3095,44 +3095,33 @@ def test_make_judge_validates_feedback_value_type():
 
 
 def test_make_judge_validates_optional_feedback_value_type():
-    # Optional[PbValueType] should be accepted for dict and list value/element types
+    # typing.Optional[T] syntax should be accepted for dict and list value/element types
     make_judge(
         name="dict_optional_int_judge",
         instructions="Rate {{ outputs }}",
         model="openai:/gpt-4",
-        feedback_value_type=dict[str, int | None],
+        feedback_value_type=dict[str, typing.Optional[int]],  # noqa: UP045
     )
     make_judge(
         name="dict_optional_float_judge",
         instructions="Rate {{ outputs }}",
         model="openai:/gpt-4",
-        feedback_value_type=dict[str, float | None],
+        feedback_value_type=dict[str, typing.Optional[float]],  # noqa: UP045
     )
     make_judge(
-        name="dict_optional_str_judge",
+        name="list_optional_str_judge",
         instructions="Rate {{ outputs }}",
         model="openai:/gpt-4",
-        feedback_value_type=dict[str, str | None],
+        feedback_value_type=list[typing.Optional[str]],  # noqa: UP045
     )
     make_judge(
-        name="dict_optional_bool_judge",
+        name="list_optional_bool_judge",
         instructions="Rate {{ outputs }}",
         model="openai:/gpt-4",
-        feedback_value_type=dict[str, bool | None],
+        feedback_value_type=list[typing.Optional[bool]],  # noqa: UP045
     )
-    make_judge(
-        name="list_optional_int_judge",
-        instructions="Rate {{ outputs }}",
-        model="openai:/gpt-4",
-        feedback_value_type=list[int | None],
-    )
-    make_judge(
-        name="list_optional_float_judge",
-        instructions="Rate {{ outputs }}",
-        model="openai:/gpt-4",
-        feedback_value_type=list[float | None],
-    )
-    # Python 3.10+ ``X | None`` syntax should also be accepted
+
+    # Python 3.10+ ``T | None`` syntax should also be accepted
     make_judge(
         name="dict_int_or_none_judge",
         instructions="Rate {{ outputs }}",

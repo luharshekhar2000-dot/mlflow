@@ -1,5 +1,4 @@
-import types as _builtin_types
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any, Literal, get_args, get_origin
 
 from mlflow.genai.judges.base import Judge
 from mlflow.genai.judges.instructions_judge import InstructionsJudge
@@ -8,25 +7,21 @@ from mlflow.telemetry.track import record_usage_event
 
 
 def _is_optional_pb_value_type(t: Any, pb_value_types: tuple[type, ...]) -> bool:
-    """Return True if t is Optional[X] where X is a PbValueType.
+    """Return True if t is Optional[T] or T | None where T is a single primitive PbValueType
+    (e.g., int, float, str, or bool).
 
-    Optional[X] is equivalent to Union[X, None] with exactly one non-NoneType argument.
-    Handles both ``typing.Optional[X]`` and the Python 3.10+ ``X | None`` syntax.
+    Works for both ``typing.Optional[T]`` and the Python 3.10+ ``T | None`` syntax because
+    ``get_args`` returns ``(T, NoneType)`` for both forms.
     """
-    origin = get_origin(t)
-    is_union = origin is Union
-    # Python 3.10+ ``X | None`` syntax creates a ``types.UnionType`` instance.
-    if (
-        not is_union
-        and hasattr(_builtin_types, "UnionType")
-        and isinstance(t, _builtin_types.UnionType)
-    ):
-        is_union = True
-    if not is_union:
-        return False
     args = get_args(t)
+    if not args:
+        return False
     non_none_args = [a for a in args if a is not type(None)]
-    return len(non_none_args) == 1 and non_none_args[0] in pb_value_types
+    return (
+        len(non_none_args) == 1
+        and len(non_none_args) < len(args)
+        and non_none_args[0] in pb_value_types
+    )
 
 
 def _validate_feedback_value_type(feedback_value_type: Any) -> None:
@@ -36,10 +31,12 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
     Supported types match FeedbackValueType:
     - PbValueType: int, float, str, bool
     - Literal types with PbValueType values
-    - dict[str, PbValueType]
-    - dict[str, Optional[PbValueType]]
-    - list[PbValueType]
-    - list[Optional[PbValueType]]
+    - dict[str, T]
+    - dict[str, T | None]
+    - list[T]
+    - list[T | None]
+
+    where T is one of PbValueType (int, float, str, or bool).
     """
 
     from mlflow.entities.assessment import PbValueType
@@ -84,7 +81,7 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
                 from mlflow.exceptions import MlflowException
 
                 raise MlflowException.invalid_parameter_value(
-                    "The `feedback_value_type` argument does not support a dict type"
+                    "The `feedback_value_type` argument does not support a dict type "
                     f"with non-primitive values, but got {value_type}"
                 )
             return
@@ -101,7 +98,7 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
                 from mlflow.exceptions import MlflowException
 
                 raise MlflowException.invalid_parameter_value(
-                    "The `feedback_value_type` argument does not support a list type"
+                    "The `feedback_value_type` argument does not support a list type "
                     f"with non-primitive values, but got {element_type}"
                 )
             return
