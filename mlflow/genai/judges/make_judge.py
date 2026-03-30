@@ -35,7 +35,6 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
     - dict[str, T | None]
     - list[T]
     - list[T | None]
-
     where T is one of PbValueType (int, float, str, or bool).
     """
 
