@@ -156,14 +156,18 @@ def make_judge(
                         - str: Text responses
                         - bool: Yes/no evaluations
                         - Literal[values]: Enum-like choices (e.g., Literal["good", "bad"])
-                        - dict[str, int | float | str | bool]: Dictionary with string keys and
-                          int, float, str, or bool values.
-                        - dict[str, Optional[int | float | str | bool]]: Dictionary with string
-                          keys and nullable values of the same primitive type (e.g.,
-                          ``dict[str, Optional[float]]`` for nullable float scores).
-                        - list[int | float | str | bool]: List of int, float, str, or bool values
-                        - list[Optional[int | float | str | bool]]: List of nullable values of
-                          the same primitive type (e.g., ``list[Optional[float]]``).
+                        - dict[str, T]: Dictionary with string keys and values of a single
+                          primitive type T, where T is one of int, float, str, or bool (e.g.,
+                          ``dict[str, float]`` for float scores).
+                        - dict[str, T | None] / dict[str, Optional[T]]: Dictionary with string
+                          keys and nullable values of a single primitive type T (e.g.,
+                          ``dict[str, float | None]`` or ``dict[str, Optional[float]]`` for
+                          nullable float scores).
+                        - list[T]: List of values of a single primitive type T, where T is one
+                          of int, float, str, or bool (e.g., ``list[int]`` or ``list[bool]``).
+                        - list[T | None] / list[Optional[T]]: List of nullable values of a
+                          single primitive type T (e.g., ``list[float | None]`` or
+                          ``list[Optional[float]]``).
 
                         Note: Pydantic BaseModel types are not supported.
         inference_params: Optional dictionary of inference parameters to pass to the model
