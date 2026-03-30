@@ -1,9 +1,32 @@
-from typing import Any, Literal, get_args, get_origin
+import types as _builtin_types
+from typing import Any, Literal, Union, get_args, get_origin
 
 from mlflow.genai.judges.base import Judge
 from mlflow.genai.judges.instructions_judge import InstructionsJudge
 from mlflow.telemetry.events import MakeJudgeEvent
 from mlflow.telemetry.track import record_usage_event
+
+
+def _is_optional_pb_value_type(t: Any, pb_value_types: tuple[type, ...]) -> bool:
+    """Return True if t is Optional[X] where X is a PbValueType.
+
+    Optional[X] is equivalent to Union[X, None] with exactly one non-NoneType argument.
+    Handles both ``typing.Optional[X]`` and the Python 3.10+ ``X | None`` syntax.
+    """
+    origin = get_origin(t)
+    is_union = origin is Union
+    # Python 3.10+ ``X | None`` syntax creates a ``types.UnionType`` instance.
+    if (
+        not is_union
+        and hasattr(_builtin_types, "UnionType")
+        and isinstance(t, _builtin_types.UnionType)
+    ):
+        is_union = True
+    if not is_union:
+        return False
+    args = get_args(t)
+    non_none_args = [a for a in args if a is not type(None)]
+    return len(non_none_args) == 1 and non_none_args[0] in pb_value_types
 
 
 def _validate_feedback_value_type(feedback_value_type: Any) -> None:
@@ -14,7 +37,9 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
     - PbValueType: int, float, str, bool
     - Literal types with PbValueType values
     - dict[str, PbValueType]
+    - dict[str, Optional[PbValueType]]
     - list[PbValueType]
+    - list[Optional[PbValueType]]
     """
 
     from mlflow.entities.assessment import PbValueType
@@ -52,13 +77,15 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
                 raise MlflowException.invalid_parameter_value(
                     f"dict key type must be str, got {key_type}"
                 )
-            # Value must be a PbValueType
-            if value_type not in pb_value_types:
+            # Value must be a PbValueType or Optional[PbValueType]
+            if value_type not in pb_value_types and not _is_optional_pb_value_type(
+                value_type, pb_value_types
+            ):
                 from mlflow.exceptions import MlflowException
 
                 raise MlflowException.invalid_parameter_value(
                     "The `feedback_value_type` argument does not support a dict type"
-                    f"with non-primitive values, but got {value_type.__name__}"
+                    f"with non-primitive values, but got {value_type}"
                 )
             return
 
@@ -67,13 +94,15 @@ def _validate_feedback_value_type(feedback_value_type: Any) -> None:
         args = get_args(feedback_value_type)
         if len(args) == 1:
             element_type = args[0]
-            # Element must be a PbValueType
-            if element_type not in pb_value_types:
+            # Element must be a PbValueType or Optional[PbValueType]
+            if element_type not in pb_value_types and not _is_optional_pb_value_type(
+                element_type, pb_value_types
+            ):
                 from mlflow.exceptions import MlflowException
 
                 raise MlflowException.invalid_parameter_value(
                     "The `feedback_value_type` argument does not support a list type"
-                    f"with non-primitive values, but got {element_type.__name__}"
+                    f"with non-primitive values, but got {element_type}"
                 )
             return
 
@@ -132,7 +161,12 @@ def make_judge(
                         - Literal[values]: Enum-like choices (e.g., Literal["good", "bad"])
                         - dict[str, int | float | str | bool]: Dictionary with string keys and
                           int, float, str, or bool values.
+                        - dict[str, Optional[int | float | str | bool]]: Dictionary with string
+                          keys and nullable values of the same primitive type (e.g.,
+                          ``dict[str, Optional[float]]`` for nullable float scores).
                         - list[int | float | str | bool]: List of int, float, str, or bool values
+                        - list[Optional[int | float | str | bool]]: List of nullable values of
+                          the same primitive type (e.g., ``list[Optional[float]]``).
 
                         Note: Pydantic BaseModel types are not supported.
         inference_params: Optional dictionary of inference parameters to pass to the model

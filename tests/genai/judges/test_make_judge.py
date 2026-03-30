@@ -3094,6 +3094,82 @@ def test_make_judge_validates_feedback_value_type():
         )
 
 
+def test_make_judge_validates_optional_feedback_value_type():
+    # Optional[PbValueType] should be accepted for dict and list value/element types
+    make_judge(
+        name="dict_optional_int_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=dict[str, int | None],
+    )
+    make_judge(
+        name="dict_optional_float_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=dict[str, float | None],
+    )
+    make_judge(
+        name="dict_optional_str_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=dict[str, str | None],
+    )
+    make_judge(
+        name="dict_optional_bool_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=dict[str, bool | None],
+    )
+    make_judge(
+        name="list_optional_int_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=list[int | None],
+    )
+    make_judge(
+        name="list_optional_float_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=list[float | None],
+    )
+    # Python 3.10+ ``X | None`` syntax should also be accepted
+    make_judge(
+        name="dict_int_or_none_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=dict[str, int | None],
+    )
+    make_judge(
+        name="list_float_or_none_judge",
+        instructions="Rate {{ outputs }}",
+        model="openai:/gpt-4",
+        feedback_value_type=list[float | None],
+    )
+
+    # Union of multiple non-None types should still be rejected
+    with pytest.raises(
+        MlflowException,
+        match=r"The `feedback_value_type` argument does not support a dict type",
+    ):
+        make_judge(
+            name="invalid_dict_union_judge",
+            instructions="Rate {{ outputs }}",
+            model="openai:/gpt-4",
+            feedback_value_type=dict[str, int | float],
+        )
+
+    with pytest.raises(
+        MlflowException,
+        match=r"The `feedback_value_type` argument does not support a list type",
+    ):
+        make_judge(
+            name="invalid_list_union_judge",
+            instructions="Rate {{ outputs }}",
+            model="openai:/gpt-4",
+            feedback_value_type=list[int | str],
+        )
+
+
 def test_make_judge_with_default_feedback_value_type(monkeypatch):
     # Test that feedback_value_type defaults to str when omitted
     captured_response_format = None
