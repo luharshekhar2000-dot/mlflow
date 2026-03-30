@@ -18,6 +18,8 @@ from mlflow.gateway.constants import (
 )
 from mlflow.protos.databricks_pb2 import BAD_REQUEST, INTERNAL_ERROR
 
+_DATABRICKS_PROVIDERS = {"databricks", "endpoints"}
+
 # ---------------------------------------------------------------------------
 # Adapter selection
 # ---------------------------------------------------------------------------
@@ -41,13 +43,22 @@ def get_adapter(
     Raises:
         MlflowException: If no suitable adapter is found.
     """
-    # Lazy imports to avoid circular imports: utils.py is imported by both
-    # gateway_adapter.py and litellm_adapter.py, so we can't import them at module level.
+    # Lazy imports to avoid circular imports and heavyweight dependency chains.
+    # _parse_model_uri is in mlflow.metrics.genai.model_utils which transitively
+    # imports pandas via mlflow.metrics.genai.genai_metric, breaking the skinny client.
+    from mlflow.genai.judges.adapters.base_adapter import DatabricksTelemetryRecorder
     from mlflow.genai.judges.adapters.databricks_managed_judge_adapter import (
         DatabricksManagedJudgeAdapter,
     )
     from mlflow.genai.judges.adapters.gateway_adapter import GatewayAdapter
     from mlflow.genai.judges.adapters.litellm_adapter import LiteLLMAdapter
+    from mlflow.metrics.genai.model_utils import _parse_model_uri
+
+    telemetry = None
+    if ":" in model_uri:
+        provider, _ = _parse_model_uri(model_uri)
+        if provider in _DATABRICKS_PROVIDERS:
+            telemetry = DatabricksTelemetryRecorder()
 
     # TODO: Reorder to [Databricks, Gateway, LiteLLM] to prioritize native
     # providers over litellm. Requires migrating ~50 tests that mock
@@ -60,7 +71,7 @@ def get_adapter(
 
     for adapter_class in adapters:
         if adapter_class.is_applicable(model_uri=model_uri, prompt=prompt):
-            return adapter_class()
+            return adapter_class(telemetry=telemetry)
 
     raise MlflowException(
         f"No suitable adapter found for model_uri='{model_uri}'.",

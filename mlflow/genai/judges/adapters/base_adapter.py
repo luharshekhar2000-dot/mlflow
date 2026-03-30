@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import pydantic
 
@@ -11,6 +12,9 @@ if TYPE_CHECKING:
     from mlflow.types.llm import ChatMessage
 
 from mlflow.entities.assessment import Feedback
+from mlflow.exceptions import MlflowException
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -86,10 +90,69 @@ class AdapterInvocationOutput:
     cost: float | None = None
 
 
+# ---------------------------------------------------------------------------
+# Telemetry
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class JudgeTelemetryRecorder(Protocol):
+    def record_success(
+        self,
+        input_params: AdapterInvocationInput,
+        output: AdapterInvocationOutput,
+    ) -> None: ...
+
+    def record_failure(
+        self,
+        input_params: AdapterInvocationInput,
+        error: MlflowException,
+    ) -> None: ...
+
+
+class DatabricksTelemetryRecorder:
+    def record_success(
+        self,
+        input_params: AdapterInvocationInput,
+        output: AdapterInvocationOutput,
+    ) -> None:
+        from mlflow.genai.judges.utils.telemetry_utils import (
+            _record_judge_model_usage_success_databricks_telemetry,
+        )
+
+        _record_judge_model_usage_success_databricks_telemetry(
+            request_id=output.request_id,
+            model_provider=input_params.model_provider,
+            endpoint_name=input_params.model_name,
+            num_prompt_tokens=output.num_prompt_tokens,
+            num_completion_tokens=output.num_completion_tokens,
+        )
+
+    def record_failure(
+        self,
+        input_params: AdapterInvocationInput,
+        error: MlflowException,
+    ) -> None:
+        from mlflow.genai.judges.utils.telemetry_utils import (
+            _record_judge_model_usage_failure_databricks_telemetry,
+        )
+
+        _record_judge_model_usage_failure_databricks_telemetry(
+            model_provider=input_params.model_provider,
+            endpoint_name=input_params.model_name,
+            error_code=error.error_code or "UNKNOWN",
+            error_message=str(error),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Base adapter
+# ---------------------------------------------------------------------------
+
+
 class BaseJudgeAdapter(ABC):
-    """
-    Abstract base class for judge model adapters.
-    """
+    def __init__(self, telemetry: JudgeTelemetryRecorder | None = None):
+        self._telemetry = telemetry
 
     @classmethod
     @abstractmethod
@@ -109,20 +172,41 @@ class BaseJudgeAdapter(ABC):
             True if this adapter can handle the model and prompt type, False otherwise.
         """
 
-    @abstractmethod
     def invoke(self, input_params: AdapterInvocationInput) -> AdapterInvocationOutput:
+        """Invoke the adapter with telemetry recording.
+
+        Subclasses implement ``_invoke`` with the actual invocation logic.
+        This method wraps it with success/failure telemetry when a recorder
+        is injected.
         """
-        Invoke the judge model using this adapter.
+        try:
+            output = self._invoke(input_params)
 
-        Args:
-            input_params: The input parameters for the invocation.
+            if self._telemetry:
+                try:
+                    self._telemetry.record_success(input_params, output)
+                except Exception:
+                    _logger.debug("Failed to record judge model usage success telemetry")
 
-        Returns:
-            The output from the invocation including feedback and metadata.
+            return output
 
-        Raises:
-            MlflowException: If the invocation fails.
-        """
+        except MlflowException as e:
+            if self._telemetry:
+                try:
+                    self._telemetry.record_failure(input_params, e)
+                except Exception:
+                    _logger.debug("Failed to record judge model usage failure telemetry")
+            raise
+
+    @abstractmethod
+    def _invoke(self, input_params: AdapterInvocationInput) -> AdapterInvocationOutput:
+        """Subclass extension point — implement the actual invocation logic."""
 
 
-__all__ = ["BaseJudgeAdapter", "AdapterInvocationInput", "AdapterInvocationOutput"]
+__all__ = [
+    "BaseJudgeAdapter",
+    "AdapterInvocationInput",
+    "AdapterInvocationOutput",
+    "JudgeTelemetryRecorder",
+    "DatabricksTelemetryRecorder",
+]
