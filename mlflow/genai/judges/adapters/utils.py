@@ -16,7 +16,6 @@ from mlflow.gateway.constants import (
     MLFLOW_GATEWAY_CLIENT_QUERY_RETRY_CODES,
     MLFLOW_GATEWAY_ROUTE_TIMEOUT_SECONDS,
 )
-from mlflow.metrics.genai.model_utils import _parse_model_uri
 from mlflow.protos.databricks_pb2 import BAD_REQUEST, INTERNAL_ERROR
 
 _DATABRICKS_PROVIDERS = {"databricks", "endpoints"}
@@ -63,8 +62,8 @@ def get_adapter(
 
     adapters = [
         DatabricksManagedJudgeAdapter,
-        LiteLLMAdapter,
         GatewayAdapter,
+        LiteLLMAdapter,
     ]
 
     for adapter_class in adapters:

@@ -171,7 +171,7 @@ def test_databricks_recorder_success_calls_telemetry_util():
     output = _make_output(request_id="req-1", prompt_tokens=10, completion_tokens=5)
 
     with mock.patch(
-        "mlflow.genai.judges.utils.telemetry_utils._record_judge_model_usage_success_databricks_telemetry"
+        "mlflow.genai.judges.adapters.base_adapter._record_judge_model_usage_success_databricks_telemetry"
     ) as mock_telemetry:
         recorder.record_success(input_params, output)
 
@@ -192,7 +192,7 @@ def test_databricks_recorder_failure_calls_telemetry_util():
     error = MlflowException("Bad request", error_code=BAD_REQUEST)
 
     with mock.patch(
-        "mlflow.genai.judges.utils.telemetry_utils._record_judge_model_usage_failure_databricks_telemetry"
+        "mlflow.genai.judges.adapters.base_adapter._record_judge_model_usage_failure_databricks_telemetry"
     ) as mock_telemetry:
         recorder.record_failure(input_params, error)
 

@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 
 from mlflow.entities.assessment import Feedback
 from mlflow.exceptions import MlflowException
+from mlflow.genai.judges.utils.telemetry_utils import (
+    _record_judge_model_usage_failure_databricks_telemetry,
+    _record_judge_model_usage_success_databricks_telemetry,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -116,10 +120,6 @@ class DatabricksTelemetryRecorder:
         input_params: AdapterInvocationInput,
         output: AdapterInvocationOutput,
     ) -> None:
-        from mlflow.genai.judges.utils.telemetry_utils import (
-            _record_judge_model_usage_success_databricks_telemetry,
-        )
-
         _record_judge_model_usage_success_databricks_telemetry(
             request_id=output.request_id,
             model_provider=input_params.model_provider,
@@ -133,10 +133,6 @@ class DatabricksTelemetryRecorder:
         input_params: AdapterInvocationInput,
         error: MlflowException,
     ) -> None:
-        from mlflow.genai.judges.utils.telemetry_utils import (
-            _record_judge_model_usage_failure_databricks_telemetry,
-        )
-
         _record_judge_model_usage_failure_databricks_telemetry(
             model_provider=input_params.model_provider,
             endpoint_name=input_params.model_name,
