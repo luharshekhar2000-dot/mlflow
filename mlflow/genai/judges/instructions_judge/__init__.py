@@ -1,7 +1,7 @@
 import json
 import logging
 from dataclasses import asdict
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 from urllib.parse import urlparse, urlunparse
 
 import pydantic
@@ -854,7 +854,7 @@ class InstructionsJudge(Judge):
                 serialized["additionalProperties"], type_map, "additionalProperties value"
             )
             if is_optional:
-                return dict[str, Optional[value_type]]
+                return dict[str, value_type | None]
             return dict[str, value_type]
 
         # Handle array (list) type
@@ -867,7 +867,7 @@ class InstructionsJudge(Judge):
                 serialized["items"], type_map, "array element"
             )
             if is_optional:
-                return list[Optional[element_type]]
+                return list[element_type | None]
             return list[element_type]
 
         # Unsupported type
