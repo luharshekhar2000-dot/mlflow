@@ -732,13 +732,17 @@ class InstructionsJudge(Judge):
         """
         Serialize a feedback_value_type to JSON Schema format.
 
-        Supports all FeedbackValueType types:
+        Supports the following FeedbackValueType variants:
         - PbValueType: float, int, str, bool
         - Literal types (as enum)
-        - dict[str, PbValueType] (as object with additionalProperties)
-        - dict[str, Optional[PbValueType]] (anyOf-with-null additionalProperties)
-        - list[PbValueType] (as array with items)
-        - list[Optional[PbValueType]] (anyOf-with-null items)
+        - dict[str, T] and dict[str, T | None]: object with additionalProperties,
+          where T must be a single primitive PbValueType (int, float, str, or bool)
+        - list[T] and list[T | None]: array with items,
+          where T must be a single primitive PbValueType (int, float, str, or bool)
+
+        Note: only a single primitive inner type (optionally nullable) is supported for
+        dict values and list elements. Nested containers and arbitrary unions are not
+        supported.
 
         Returns a JSON Schema representation of the type.
         """
