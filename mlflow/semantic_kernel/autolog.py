@@ -1,5 +1,6 @@
 import logging
 import threading
+from typing import Any
 
 from opentelemetry import trace as otel_trace
 from opentelemetry.context import Context
@@ -86,7 +87,7 @@ class SemanticKernelSpanProcessor(SimpleSpanProcessor):
         # NB: Dummy NoOp exporter, because OTel span processor requires an exporter
         self.span_exporter = SpanExporter()
         # Store context tokens for each span so we can detach them in on_end
-        self._context_tokens: dict[int, object] = {}
+        self._context_tokens: dict[int, Any] = {}
         self._processing_local = threading.local()
 
     def on_start(self, span: OTelSpan, parent_context: Context | None = None):

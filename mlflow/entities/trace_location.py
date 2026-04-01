@@ -155,7 +155,7 @@ class UnityCatalog(TraceLocationBase):
     _otel_logs_table_name: str | None = None
     _annotations_table_name: str | None = None
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, UnityCatalog):
             return NotImplemented
         return (

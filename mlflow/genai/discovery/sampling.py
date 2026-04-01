@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import random
+from typing import Any
 
 import mlflow
 from mlflow.entities.trace import Trace
@@ -16,7 +17,7 @@ _logger = logging.getLogger(__name__)
 
 def sample_traces(
     sample_size: int,
-    search_kwargs: dict[str, object] | None = None,
+    search_kwargs: dict[str, Any] | None = None,
     *,
     traces: list[Trace] | None = None,
 ) -> list[Trace]:

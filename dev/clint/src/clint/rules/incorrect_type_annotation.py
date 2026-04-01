@@ -7,6 +7,7 @@ class IncorrectTypeAnnotation(Rule):
     MAPPING = {
         "callable": "Callable",
         "any": "Any",
+        "object": "Any",
     }
 
     def __init__(self, type_hint: str) -> None:

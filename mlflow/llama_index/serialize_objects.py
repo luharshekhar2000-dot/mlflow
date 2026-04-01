@@ -12,7 +12,7 @@ from llama_index.core.schema import BaseComponent
 _logger = logging.getLogger(__name__)
 
 
-def _get_object_import_path(o: object) -> str:
+def _get_object_import_path(o: Any) -> str:
     if not inspect.isclass(o):
         o = o.__class__
 
@@ -31,7 +31,7 @@ def _sanitize_api_key(object_as_dict: dict[str, str]) -> dict[str, str]:
     return {k: v for k, v in object_as_dict.items() if "api_key" not in k.lower()}
 
 
-def object_to_dict(o: object):
+def object_to_dict(o: Any):
     if isinstance(o, (list, tuple)):
         return [object_to_dict(v) for v in o]
 
@@ -86,7 +86,7 @@ def _construct_prompt_template_object(
         )
 
 
-def dict_to_object(object_representation: dict[str, Any]) -> object:
+def dict_to_object(object_representation: dict[str, Any]) -> Any:
     if "object_constructor" not in object_representation:
         raise ValueError("'object_constructor' key not found in dict.")
     if "object_kwargs" not in object_representation:

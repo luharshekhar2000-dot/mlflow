@@ -163,7 +163,7 @@ class DatasetRecord(_MlflowObject):
             last_updated_by=data.get("last_updated_by"),
         )
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DatasetRecord):
             return False
         return (

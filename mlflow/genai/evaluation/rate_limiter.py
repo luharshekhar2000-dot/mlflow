@@ -7,7 +7,7 @@ import contextlib
 import logging
 import threading
 import time
-from typing import Callable
+from typing import Any, Callable
 
 _logger = logging.getLogger(__name__)
 
@@ -166,11 +166,11 @@ class NoOpRateLimiter(RateLimiter):
 
 
 def call_with_retry(
-    fn: Callable[[], object],
+    fn: Callable[[], Any],
     rate_limiter: RateLimiter,
     max_retries: int,
     sleep: Callable[[float], None] = time.sleep,
-) -> object:
+) -> Any:
     last_exc = None
     for attempt in range(max_retries + 1):
         rate_limiter.acquire()

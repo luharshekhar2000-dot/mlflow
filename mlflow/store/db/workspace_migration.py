@@ -1,3 +1,5 @@
+from typing import Any
+
 import sqlalchemy as sa
 
 from mlflow.store.db.workspace_utils import (
@@ -37,7 +39,7 @@ _CONFLICT_SPECS = [
 
 
 def _format_conflicts(
-    conflicts: list[tuple[object, ...]],
+    conflicts: list[tuple[Any, ...]],
     columns: tuple[str, ...],
     *,
     max_rows: int | None,
