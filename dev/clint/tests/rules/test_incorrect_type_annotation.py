@@ -16,6 +16,10 @@ def bad_function_any(param: any) -> any:
 def bad_function_object(param: object) -> object:
     ...
 
+class Good:
+    def __eq__(self, other: object) -> bool:
+        ...
+
 def good_function(param: Callable[[str], str]) -> Any:
     ...
 """

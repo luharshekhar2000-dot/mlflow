@@ -318,17 +318,23 @@ class ExampleVisitor(ast.NodeVisitor):
 
 
 class TypeAnnotationVisitor(ast.NodeVisitor):
-    def __init__(self, linter: "Linter") -> None:
+    def __init__(self, linter: "Linter", *, func_name: str | None = None) -> None:
         self.linter = linter
         self.stack: list[ast.AST] = []
+        self.func_name = func_name
 
     def visit(self, node: ast.AST) -> None:
         self.stack.append(node)
         super().visit(node)
         self.stack.pop()
 
+    @staticmethod
+    def _is_dunder(name: str) -> bool:
+        return name.startswith("__") and name.endswith("__")
+
     def visit_Name(self, node: ast.Name) -> None:
-        if rules.IncorrectTypeAnnotation.check(node):
+        in_dunder = self.func_name is not None and self._is_dunder(self.func_name)
+        if rules.IncorrectTypeAnnotation.check(node, in_dunder=in_dunder):
             self.linter._check(Range.from_node(node), rules.IncorrectTypeAnnotation(node.id))
 
         if self._is_bare_generic_type(node):
@@ -646,10 +652,10 @@ class Linter(ast.NodeVisitor):
 
         for arg in node.args.args + node.args.kwonlyargs + node.args.posonlyargs:
             if arg.annotation:
-                self.visit_type_annotation(arg.annotation)
+                self.visit_type_annotation(arg.annotation, func_name=node.name)
 
         if node.returns:
-            self.visit_type_annotation(node.returns)
+            self.visit_type_annotation(node.returns, func_name=node.name)
 
         self.stack.append(node)
         self._no_rst(node)
@@ -671,10 +677,10 @@ class Linter(ast.NodeVisitor):
 
         for arg in node.args.args + node.args.kwonlyargs + node.args.posonlyargs:
             if arg.annotation:
-                self.visit_type_annotation(arg.annotation)
+                self.visit_type_annotation(arg.annotation, func_name=node.name)
 
         if node.returns:
-            self.visit_type_annotation(node.returns)
+            self.visit_type_annotation(node.returns, func_name=node.name)
 
         self.stack.append(node)
         self._no_rst(node)
@@ -887,8 +893,8 @@ class Linter(ast.NodeVisitor):
             self._check(Range.from_node(node), rules.AssignBeforeAppend())
         self.generic_visit(node)
 
-    def visit_type_annotation(self, node: ast.expr) -> None:
-        visitor = TypeAnnotationVisitor(self)
+    def visit_type_annotation(self, node: ast.expr, *, func_name: str | None = None) -> None:
+        visitor = TypeAnnotationVisitor(self, func_name=func_name)
         visitor.visit(node)
 
     def visit_If(self, node: ast.If) -> None:

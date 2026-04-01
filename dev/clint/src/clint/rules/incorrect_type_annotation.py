@@ -14,7 +14,9 @@ class IncorrectTypeAnnotation(Rule):
         self.type_hint = type_hint
 
     @staticmethod
-    def check(node: ast.Name) -> bool:
+    def check(node: ast.Name, *, in_dunder: bool = False) -> bool:
+        if node.id == "object" and in_dunder:
+            return False
         return node.id in IncorrectTypeAnnotation.MAPPING
 
     def _message(self) -> str:

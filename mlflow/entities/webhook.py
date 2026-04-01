@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
 from typing_extensions import Self
 
@@ -242,7 +242,7 @@ class WebhookEvent:
     def __str__(self) -> str:
         return f"{self.entity.value}.{self.action.value}"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, WebhookEvent):
             return False
         return self.entity == other.entity and self.action == other.action
