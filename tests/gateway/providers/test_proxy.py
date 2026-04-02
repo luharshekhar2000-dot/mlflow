@@ -1,5 +1,4 @@
-"""Tests for the generic proxy gateway provider."""
-
+import json
 from typing import Any
 from unittest import mock
 
@@ -29,8 +28,6 @@ class _MockAsyncResponse:
         return self._content
 
     async def text(self) -> str:
-        import json
-
         return json.dumps(self._content)
 
     async def __aenter__(self):
@@ -133,7 +130,7 @@ def test_build_headers_with_proxy_headers():
 
 
 def test_build_headers_proxy_wins_over_client():
-    """proxy_headers override same-name client headers."""
+    # proxy_headers override same-name client headers
     provider = _make_provider(proxy_headers={"Authorization": "Bearer proxy-key"})
     client_headers = {"Authorization": "Bearer client-key", "X-Forwarded-For": "1.2.3.4"}
     result = provider._build_headers(client_headers)
@@ -142,7 +139,7 @@ def test_build_headers_proxy_wins_over_client():
 
 
 def test_build_headers_drops_hop_by_hop():
-    """host, content-length, and authorization from client are dropped before merge."""
+    # host, content-length, and authorization from client are dropped before merge
     provider = _make_provider(proxy_headers=None)
     client_headers = {
         "host": "gateway.example.com",
@@ -206,9 +203,7 @@ async def test_proxy_request_streaming():
             path="chat/completions", payload=payload, headers=None
         )
 
-        chunks = []
-        async for chunk in result:
-            chunks.append(chunk)
+        chunks = [chunk async for chunk in result]
 
     assert len(chunks) == 2
 

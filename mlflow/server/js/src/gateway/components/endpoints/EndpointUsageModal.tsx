@@ -16,7 +16,7 @@ import { CopyButton } from '@mlflow/mlflow/src/shared/building_blocks/CopyButton
 import { CodeSnippet } from '@databricks/web-shared/snippet';
 import { TryItPanel } from './TryItPanel';
 
-type Provider = 'openai' | 'anthropic' | 'gemini';
+type Provider = 'openai' | 'anthropic' | 'gemini' | 'proxy';
 type Language = 'curl' | 'python';
 
 interface EndpointUsageModalProps {
@@ -56,6 +56,8 @@ const getTryItRequestUrl = (
       return `${base}/gateway/anthropic/v1/messages`;
     case 'gemini':
       return `${base}/gateway/gemini/v1beta/models/${endpointName}:generateContent`;
+    case 'proxy':
+      return `${base}/gateway/proxy/${endpointName}/v1/chat/completions`;
     default:
       return `${base}/gateway/${endpointName}/mlflow/invocations`;
   }
@@ -213,6 +215,36 @@ print(response.candidates[0].content.parts[0].text)`,
         defaultBody: JSON.stringify(
           {
             contents: [{ parts: [{ text: 'How are you?' }] }],
+          },
+          null,
+          2,
+        ),
+      };
+    case 'proxy':
+      return {
+        curl: `curl -X POST ${base}/gateway/proxy/${endpointName}/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{
+  "model": "your-model-name",
+  "messages": [
+    {"role": "user", "content": "How are you?"}
+  ]
+}'`,
+        python: `import requests
+
+# POST to /gateway/proxy/<endpoint>/<path> - the path is forwarded to the configured proxy_url
+response = requests.post(
+    "${base}/gateway/proxy/${endpointName}/v1/chat/completions",
+    json={
+        "model": "your-model-name",
+        "messages": [{"role": "user", "content": "How are you?"}],
+    },
+)
+print(response.json())`,
+        defaultBody: JSON.stringify(
+          {
+            model: 'your-model-name',
+            messages: [{ role: 'user', content: 'How are you?' }],
           },
           null,
           2,
@@ -467,6 +499,9 @@ export const EndpointUsageModal = ({ open, onClose, endpointName, baseUrl }: End
                   <SegmentedControlButton value="openai">OpenAI</SegmentedControlButton>
                   <SegmentedControlButton value="anthropic">Anthropic</SegmentedControlButton>
                   <SegmentedControlButton value="gemini">Google Gemini</SegmentedControlButton>
+                  <SegmentedControlButton value="proxy">
+                    <FormattedMessage defaultMessage="Custom Proxy" description="Custom proxy passthrough provider" />
+                  </SegmentedControlButton>
                 </SegmentedControlGroup>
               </div>
 
@@ -491,6 +526,14 @@ export const EndpointUsageModal = ({ open, onClose, endpointName, baseUrl }: End
                   <FormattedMessage
                     defaultMessage="Direct access to Google's Gemini API. Note: endpoint name is part of the URL path."
                     description="Gemini passthrough description"
+                  />
+                </Typography.Text>
+              )}
+              {selectedProvider === 'proxy' && (
+                <Typography.Text color="secondary" css={{ display: 'block', marginBottom: theme.spacing.sm }}>
+                  <FormattedMessage
+                    defaultMessage="Forward requests to any LLM API via the configured proxy URL. The path after the endpoint name is appended to the proxy URL."
+                    description="Custom proxy passthrough description"
                   />
                 </Typography.Text>
               )}
@@ -527,6 +570,7 @@ export const EndpointUsageModal = ({ open, onClose, endpointName, baseUrl }: End
                           openai: 'OpenAI',
                           anthropic: 'Anthropic',
                           gemini: 'Google Gemini',
+                          proxy: 'Custom Proxy',
                         }[selectedProvider],
                       }}
                     />
@@ -562,6 +606,12 @@ export const EndpointUsageModal = ({ open, onClose, endpointName, baseUrl }: End
                   {selectedProvider === 'gemini' &&
                     viewMode === 'python' &&
                     renderCodeExample('Python', getCodeExamples(base, endpointName, 'gemini').python, 'python')}
+                  {selectedProvider === 'proxy' &&
+                    viewMode === 'curl' &&
+                    renderCodeExample('cURL', getCodeExamples(base, endpointName, 'proxy').curl, 'text')}
+                  {selectedProvider === 'proxy' &&
+                    viewMode === 'python' &&
+                    renderCodeExample('Python', getCodeExamples(base, endpointName, 'proxy').python, 'python')}
                 </div>
               )}
             </div>

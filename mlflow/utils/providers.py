@@ -476,6 +476,27 @@ _PROVIDER_AUTH_MODES: dict[str, dict[str, AuthModeDict]] = {
             ],
         },
     },
+    "proxy": {
+        "api_key": {
+            "display_name": "Proxy URL with optional API Key",
+            "description": "Configure a custom proxy URL to forward requests to any LLM API",
+            "default": True,
+            "fields": [
+                {
+                    "name": "proxy_url",
+                    "description": "Target URL to forward requests to (e.g., https://api.example.com/v1)",
+                    "secret": False,
+                    "required": True,
+                },
+                {
+                    "name": "api_key",
+                    "description": "API key to include as Authorization: Bearer header (optional)",
+                    "secret": True,
+                    "required": False,
+                },
+            ],
+        },
+    },
 }
 
 _BEDROCK_PROVIDERS = {"bedrock", "bedrock_converse"}

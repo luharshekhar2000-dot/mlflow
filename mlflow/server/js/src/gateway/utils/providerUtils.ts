@@ -12,6 +12,7 @@ export const COMMON_PROVIDERS = [
   'openrouter',
   'ollama',
   'together_ai',
+  'proxy',
 ] as const;
 
 export interface ProviderGroup {
@@ -100,6 +101,7 @@ const PROVIDER_DISPLAY_NAMES = {
   deepseek: 'DeepSeek',
   openrouter: 'OpenRouter',
   ollama: 'Ollama',
+  proxy: 'Custom Proxy',
 } satisfies Record<string, string>;
 
 export function formatProviderName(provider: string): string {
@@ -150,6 +152,7 @@ export function formatCredentialFieldName(fieldName: string): string {
     vertex_location: 'Location',
     databricks_token: 'Databricks Token',
     databricks_host: 'Databricks Host',
+    proxy_url: 'Proxy URL',
   } satisfies Record<string, string>;
 
   if (fieldName in formatMap) {
