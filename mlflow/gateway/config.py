@@ -64,6 +64,7 @@ class Provider(str, Enum):
     OPENROUTER = "openrouter"
     OLLAMA = "ollama"
     VERTEX_AI = "vertex_ai"
+    PROXY = "proxy"
 
     @classmethod
     def values(cls):
@@ -82,6 +83,7 @@ class EndpointType(str, Enum):
     LLM_V1_COMPLETIONS = "llm/v1/completions"
     LLM_V1_CHAT = "llm/v1/chat"
     LLM_V1_EMBEDDINGS = "llm/v1/embeddings"
+    LLM_V1_PROXY = "llm/v1/proxy"
 
 
 class GatewayRequestType(str, Enum):
@@ -96,6 +98,7 @@ class GatewayRequestType(str, Enum):
     PASSTHROUGH_MODEL_OPENAI_RESPONSES = "passthrough/model/openai-responses"
     PASSTHROUGH_MODEL_ANTHROPIC_MESSAGES = "passthrough/model/anthropic-messages"
     PASSTHROUGH_MODEL_GEMINI_GENERATE_CONTENT = "passthrough/model/gemini-generateContent"
+    PROXY_PASSTHROUGH = "proxy/passthrough"
 
 
 class CohereConfig(ConfigModel):
@@ -323,6 +326,25 @@ class LiteLLMConfig(ConfigModel):
 
         values["litellm_auth_config"] = auth_config
         return values
+
+
+class ProxyConfig(ConfigModel):
+    """Configuration for the generic proxy provider.
+
+    The proxy provider forwards requests to any HTTP endpoint without any
+    provider-specific payload transformation. This allows users to route
+    requests to any LLM API that is not built-in.
+
+    Args:
+        proxy_url: The base URL of the target endpoint (e.g., ``https://api.example.com/v1``).
+            Incoming request paths are appended to this URL.
+        proxy_headers: Optional dict of HTTP headers to include with every proxied request
+            (e.g., ``{"Authorization": "Bearer sk-..."}``, ``{"api-key": "..."}``)  .
+            These headers take precedence over client-supplied headers of the same name.
+    """
+
+    proxy_url: str
+    proxy_headers: dict[str, str] | None = None
 
 
 class ModelInfo(ResponseModel):

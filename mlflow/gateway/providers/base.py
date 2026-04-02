@@ -174,6 +174,32 @@ class BaseProvider(ABC):
     async def embeddings(self, payload: embeddings.RequestPayload) -> embeddings.ResponsePayload:
         return await self._maybe_trace_method("embeddings", self._embeddings, payload)
 
+    async def proxy_request(
+        self,
+        path: str,
+        payload: dict[str, Any],
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any] | AsyncIterable[Any]:
+        """Forward a raw request to a configured proxy URL.
+
+        The default implementation raises a 501 error. Override this method
+        in subclasses that support the generic proxy passthrough (e.g.
+        :class:`~mlflow.gateway.providers.proxy.ProxyProvider`).
+
+        Args:
+            path: The URL sub-path to append to the provider's base URL.
+            payload: The JSON-serialisable request body to forward.
+            headers: Optional client request headers.
+
+        Returns:
+            Parsed JSON response dict or an ``AsyncIterable[bytes]`` for
+            streaming responses.
+        """
+        raise AIGatewayException(
+            status_code=501,
+            detail=f"The proxy passthrough is not implemented for {self.NAME} models.",
+        )
+
     async def passthrough(
         self,
         action: PassthroughAction,

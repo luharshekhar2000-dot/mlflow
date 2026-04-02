@@ -29,6 +29,7 @@ from mlflow.gateway.config import (
     OpenAIAPIType,
     OpenAIConfig,
     Provider,
+    ProxyConfig,
     VertexAIConfig,
     _AuthConfigKey,
     _OpenAICompatibleConfig,
@@ -309,6 +310,23 @@ def _build_endpoint_config(
             vertex_project=auth_config.get("vertex_project"),
             vertex_location=auth_config.get("vertex_location"),
             vertex_credentials=model_config.secret_value.get("vertex_credentials"),
+        )
+    elif model_config.provider == Provider.PROXY:
+        auth_config = model_config.auth_config or {}
+        secret = model_config.secret_value or {}
+        # Support two secret_value formats:
+        #   1. {"proxy_headers": {"Authorization": "Bearer ..."}} - explicit headers dict
+        #   2. {"api_key": "..."}                                 - becomes Authorization: Bearer
+        if proxy_headers := secret.get("proxy_headers"):
+            pass
+        elif api_key := secret.get(_AuthConfigKey.API_KEY):
+            header_name = auth_config.get("header_name", "Authorization")
+            proxy_headers = {header_name: f"Bearer {api_key}"}
+        else:
+            proxy_headers = None
+        provider_config = ProxyConfig(
+            proxy_url=auth_config["proxy_url"],
+            proxy_headers=proxy_headers,
         )
     else:
         # Use LiteLLM as fallback for unsupported providers
@@ -1014,3 +1032,76 @@ async def gemini_passthrough_stream_generate_content(endpoint_name: str, request
     return StreamingResponse(
         safe_stream(traced_stream(body), as_bytes=True), media_type="text/event-stream"
     )
+
+
+@gateway_router.post("/proxy/{endpoint_name}/{path:path}", response_model=None)
+@translate_http_exception
+@_record_gateway_invocation(GatewayInvocationType.PROXY_PASSTHROUGH)
+async def proxy_passthrough(endpoint_name: str, path: str, request: Request):
+    """
+    Generic proxy passthrough endpoint.
+
+    Forwards POST requests to the URL configured in the proxy endpoint, allowing
+    users to route traffic through the MLflow AI Gateway to any LLM API—commercial
+    providers, self-hosted models, or other services—without being restricted to the
+    built-in provider list.
+
+    The ``endpoint_name`` path segment identifies the MLflow gateway endpoint whose
+    ``ProxyConfig`` supplies the target URL and any authentication headers.  The
+    remaining ``path`` is appended to the configured ``proxy_url``.
+
+    Streaming is supported: when the request body contains ``"stream": true`` the
+    response is returned as a Server-Sent Events stream; otherwise a plain JSON
+    response is returned.
+
+    Example:
+        POST /gateway/proxy/my-proxy-endpoint/v1/chat/completions
+        {
+            "model": "gpt-4o",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "stream": false
+        }
+
+    The above request is forwarded to ``<proxy_url>/v1/chat/completions`` with the
+    configured proxy headers injected (e.g. ``Authorization: Bearer <key>``).
+    """
+    body = await _get_request_body(request)
+    user_metadata = _get_user_metadata(request)
+
+    store = _get_store()
+    workspace = get_request_workspace()
+    _validate_store(store)
+    headers = dict(request.headers)
+    provider, endpoint_config = _create_provider_from_endpoint_name(
+        store, endpoint_name, EndpointType.LLM_V1_PROXY
+    )
+    check_budget_limit(store, endpoint_config, workspace=workspace)
+
+    if body.get("stream", False):
+        stream = await provider.proxy_request(path=path, payload=body, headers=headers)
+
+        async def yield_stream(body: dict[str, Any]):
+            async for chunk in stream:
+                yield chunk
+
+        traced_stream = maybe_traced_gateway_call(
+            yield_stream,
+            endpoint_config,
+            user_metadata,
+            request_headers=headers,
+            request_type=GatewayRequestType.PROXY_PASSTHROUGH,
+            on_complete=make_budget_on_complete(store, workspace),
+        )
+        return StreamingResponse(
+            safe_stream(traced_stream(body), as_bytes=True), media_type="text/event-stream"
+        )
+
+    traced_proxy = maybe_traced_gateway_call(
+        provider.proxy_request,
+        endpoint_config,
+        user_metadata,
+        request_headers=headers,
+        request_type=GatewayRequestType.PROXY_PASSTHROUGH,
+        on_complete=make_budget_on_complete(store, workspace),
+    )
+    return await traced_proxy(path=path, payload=body, headers=headers)
