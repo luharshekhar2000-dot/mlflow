@@ -25,6 +25,7 @@ import { Link, matchPath, useLocation, useParams, useSearchParams } from '../uti
 import ExperimentTrackingRoutes from '../../experiment-tracking/routes';
 import { ModelRegistryRoutes } from '../../model-registry/routes';
 import GatewayRoutes from '../../gateway/routes';
+import AdminRoutes from '../../admin/routes';
 import { FormattedMessage } from 'react-intl';
 import { useLogTelemetryEvent } from '../../telemetry/hooks/useLogTelemetryEvent';
 import { useWorkflowType, WorkflowType } from '../contexts/WorkflowTypeContext';
@@ -53,6 +54,7 @@ const isPromptsActive = (location: Location) => Boolean(matchPath('/prompts/*', 
 const isGatewayActive = (location: Location) => Boolean(matchPath('/gateway/*', location.pathname));
 const isApiKeysActive = (location: Location) => Boolean(matchPath('/gateway/api-keys', location.pathname));
 const isSettingsActive = (location: Location) => Boolean(matchPath('/settings/*', location.pathname));
+const isAdminActive = (location: Location) => Boolean(matchPath('/admin/*', location.pathname));
 
 type MlFlowSidebarMenuDropdownComponentId =
   | 'mlflow_sidebar.create_experiment_button'
@@ -407,6 +409,19 @@ export function MlflowSidebar({
               <FormattedMessage defaultMessage="Docs" description="Sidebar link for docs page" />
               <NewWindowIcon css={{ fontSize: theme.typography.fontSizeBase }} />
             </span>
+          </MlflowSidebarLink>
+          <MlflowSidebarLink
+            css={{ paddingBlock: theme.spacing.sm }}
+            to={AdminRoutes.usersPageRoute}
+            componentId="mlflow.sidebar.admin_tab_link"
+            isActive={isAdminActive}
+            icon={<GearIcon />}
+            collapsed={!showSidebar}
+          >
+            <FormattedMessage
+              defaultMessage="User Management"
+              description="Sidebar link for user management admin page"
+            />
           </MlflowSidebarLink>
           <MlflowSidebarLink
             css={{ paddingBlock: theme.spacing.sm }}
