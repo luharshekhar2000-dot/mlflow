@@ -232,7 +232,7 @@ print(response.candidates[0].content.parts[0].text)`,
 }'`,
         python: `import requests
 
-# POST to /gateway/proxy/<endpoint>/<path> - the path is forwarded to the configured proxy_url
+# POST to /gateway/proxy/<endpoint>/<path> - The path is forwarded to the configured proxy_url.
 response = requests.post(
     "${base}/gateway/proxy/${endpointName}/v1/chat/completions",
     json={

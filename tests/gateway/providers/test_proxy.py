@@ -130,7 +130,7 @@ def test_build_headers_with_proxy_headers():
 
 
 def test_build_headers_proxy_wins_over_client():
-    # proxy_headers override same-name client headers
+    # Proxy headers override same-name client headers.
     provider = _make_provider(proxy_headers={"Authorization": "Bearer proxy-key"})
     client_headers = {"Authorization": "Bearer client-key", "X-Forwarded-For": "1.2.3.4"}
     result = provider._build_headers(client_headers)
@@ -139,7 +139,7 @@ def test_build_headers_proxy_wins_over_client():
 
 
 def test_build_headers_drops_hop_by_hop():
-    # host, content-length, and authorization from client are dropped before merge
+    # Host, Content-Length, and Authorization from client are dropped before merge.
     provider = _make_provider(proxy_headers=None)
     client_headers = {
         "host": "gateway.example.com",
