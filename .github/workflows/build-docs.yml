@@ -102,10 +102,8 @@ jobs:
           persist-credentials: false
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-java
-        if: inputs.command == 'build-docs'
       - uses: ./.github/actions/setup-python
       - uses: ./.github/actions/setup-node
-        if: inputs.command == 'build-docs'
       - name: Run
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
