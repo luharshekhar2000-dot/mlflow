@@ -43,7 +43,7 @@ class Repo:
             cmd += ["--filter=blob:none"]
         with tempfile.TemporaryDirectory(prefix="mlflow-") as tmp:
             root = Path(tmp) / "repo"
-            cmd += [url, str(root)]
+            cmd += [url, root]
             subprocess.check_call(cmd)
             instance = cls(root, user=user, token=token)
             instance._configure_identity()
