@@ -31,15 +31,12 @@ class Repo:
         repo: str,
         branch: str,
         token: str | None = None,
-        blobless: bool = False,
     ) -> Iterator[Repo]:
         if token:
             url = f"https://mlflow-app[bot]:{token}@github.com/{repo}.git"
         else:
             url = f"https://github.com/{repo}.git"
         cmd = ["git", "clone", "--depth", "1", "--branch", branch]
-        if blobless:
-            cmd += ["--filter=blob:none"]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "repo"
             subprocess.check_call([*cmd, url, root])
@@ -210,7 +207,6 @@ def release_post(args: argparse.Namespace) -> None:
         repo="mlflow/mlflow-website",
         branch="main",
         token=args.token,
-        blobless=True,
     ) as website_repo:
         branch_name = f"release-post-{release_version}-{uuid.uuid4().hex[:8]}"
         website_repo.checkout_new(branch_name)
