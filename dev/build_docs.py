@@ -18,10 +18,9 @@ from packaging.version import InvalidVersion, Version
 
 
 class Repo:
-    def __init__(self, repo: str, root: Path, *, user: str | None = None, token: str | None = None):
+    def __init__(self, repo: str, root: Path, *, token: str | None = None):
         self.repo = repo
         self.root = root
-        self.user = user
         self.token = token
 
     @classmethod
@@ -31,12 +30,11 @@ class Repo:
         *,
         repo: str,
         branch: str,
-        user: str | None = None,
         token: str | None = None,
         blobless: bool = False,
     ) -> Iterator[Repo]:
-        if user and token:
-            url = f"https://{user}:{token}@github.com/{repo}.git"
+        if token:
+            url = f"https://mlflow-app[bot]:{token}@github.com/{repo}.git"
         else:
             url = f"https://github.com/{repo}.git"
         cmd = ["git", "clone", "--depth", "1", "--branch", branch]
@@ -45,7 +43,7 @@ class Repo:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "repo"
             subprocess.check_call([*cmd, url, root])
-            instance = cls(repo, root, user=user, token=token)
+            instance = cls(repo, root, token=token)
             instance._configure_identity()
             yield instance
 
@@ -125,7 +123,6 @@ def build_docs(args: argparse.Namespace) -> None:
     with Repo.clone(
         repo="mlflow/mlflow-legacy-website",
         branch="main",
-        user=args.user,
         token=args.token,
     ) as website_repo:
         branch_name = f"docs-{release_version}-{uuid.uuid4().hex[:8]}"
@@ -213,7 +210,6 @@ def release_post(args: argparse.Namespace) -> None:
     with Repo.clone(
         repo="mlflow/mlflow-website",
         branch="main",
-        user=args.user,
         token=args.token,
         blobless=True,
     ) as website_repo:
@@ -293,11 +289,6 @@ def main() -> None:
         "--mlflow-dir",
         default=".",
         help="Path to the local MLflow repository checkout",
-    )
-    parser.add_argument(
-        "--user",
-        default="mlflow-app[bot]",
-        help="GitHub username for authentication (default: mlflow-app[bot])",
     )
     parser.add_argument(
         "--token",
