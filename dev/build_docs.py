@@ -153,7 +153,6 @@ def build_docs(args: argparse.Namespace) -> None:
         # Update versions.json
         _update_versions_json(website_repo.root / "docs" / "versions.json", version)
 
-        # Commit, push, and create PR
         website_repo.add_all()
 
         if not website_repo.has_changes():
