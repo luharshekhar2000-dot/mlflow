@@ -191,13 +191,13 @@ def _update_versions_json(json_path: Path, release_version: Version) -> None:
         versions.append(release_version)
 
     # Keep only the highest version for each minor release
-    best: dict[tuple[int, int], Version] = {}
+    latest_by_minor: dict[tuple[int, int], Version] = {}
     for v in versions:
         key = (v.major, v.minor)
-        if key not in best or v > best[key]:
-            best[key] = v
+        if key not in latest_by_minor or v > latest_by_minor[key]:
+            latest_by_minor[key] = v
 
-    data["versions"] = [str(v) for v in sorted(best.values(), reverse=True)]
+    data["versions"] = [str(v) for v in sorted(latest_by_minor.values(), reverse=True)]
     json_path.write_text(json.dumps(data, indent=2))
 
 
