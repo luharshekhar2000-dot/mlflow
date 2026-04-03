@@ -73,7 +73,8 @@ class Repo:
         self.git("push", "origin", branch)
 
     def create_pr(self, *, repo: str, head: str, title: str, body: str) -> str:
-        assert self.token
+        if not self.token:
+            raise ValueError("Cannot create PR without a token")
         env = {**os.environ, "GH_TOKEN": self.token}
         output = subprocess.check_output(
             [
