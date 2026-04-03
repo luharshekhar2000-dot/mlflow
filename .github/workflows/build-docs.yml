@@ -1,0 +1,100 @@
+name: build-docs
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - dev/build_docs.py
+      - .github/workflows/build-docs.yml
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The branch, tag or SHA to checkout from (e.g., branch-3.0)"
+        required: true
+      command:
+        description: "Command to run"
+        required: true
+        type: choice
+        options:
+          - build-docs
+          - release-post
+      gtm_id:
+        description: "Google Tag Manager ID (build-docs only)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Skip push and PR creation"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-python
+      - uses: ./.github/actions/setup-node
+      - name: Test build-docs
+        run: |
+          uv run dev/build_docs.py --dry-run build-docs
+      - name: Test release-post
+        run: |
+          uv run dev/build_docs.py --dry-run release-post
+
+  run:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-python
+      - uses: ./.github/actions/setup-node
+      - name: Run
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          COMMAND: ${{ inputs.command }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          GTM_ID: ${{ inputs.gtm_id }}
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "$DRY_RUN" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          GTM_FLAG=""
+          if [ "$COMMAND" = "build-docs" ] && [ -n "$GTM_ID" ]; then
+            GTM_FLAG="--gtm-id $GTM_ID"
+          fi
+
+          uv run dev/build_docs.py \
+            $DRY_RUN_FLAG \
+            "$COMMAND" \
+            $GTM_FLAG
