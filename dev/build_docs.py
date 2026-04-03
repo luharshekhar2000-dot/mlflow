@@ -18,7 +18,8 @@ from packaging.version import InvalidVersion, Version
 
 
 class Repo:
-    def __init__(self, root: Path, *, user: str | None = None, token: str | None = None):
+    def __init__(self, repo: str, root: Path, *, user: str | None = None, token: str | None = None):
+        self.repo = repo
         self.root = root
         self.user = user
         self.token = token
@@ -43,15 +44,21 @@ class Repo:
             cmd += ["--filter=blob:none"]
         with tempfile.TemporaryDirectory(prefix="mlflow-") as tmp:
             root = Path(tmp) / "repo"
-            cmd += [url, root]
-            subprocess.check_call(cmd)
-            instance = cls(root, user=user, token=token)
+            subprocess.check_call([*cmd, url, root])
+            instance = cls(repo, root, user=user, token=token)
             instance._configure_identity()
             yield instance
 
     def _configure_identity(self) -> None:
         self.git("config", "user.name", "mlflow-app[bot]")
         self.git("config", "user.email", "mlflow-app[bot]@users.noreply.github.com")
+
+    @property
+    def branch(self) -> str:
+        output = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=self.root, text=True
+        )
+        return output.strip()
 
     def git(self, *args: str) -> None:
         subprocess.check_call(["git", *args], cwd=self.root)
@@ -69,10 +76,10 @@ class Repo:
     def commit(self, message: str) -> None:
         self.git("commit", "-m", message)
 
-    def push(self, branch: str) -> None:
-        self.git("push", "origin", branch)
+    def push(self) -> None:
+        self.git("push", "origin", self.branch)
 
-    def create_pr(self, *, repo: str, head: str, title: str, body: str) -> str:
+    def create_pr(self, *, title: str, body: str) -> str:
         if not self.token:
             raise ValueError("Cannot create PR without a token")
         env = {**os.environ, "GH_TOKEN": self.token}
@@ -82,9 +89,9 @@ class Repo:
                 "pr",
                 "create",
                 "--repo",
-                repo,
+                self.repo,
                 "--head",
-                head,
+                self.branch,
                 "--base",
                 "main",
                 "--title",
@@ -161,12 +168,10 @@ def build_docs(args: argparse.Namespace) -> None:
         if args.dry_run:
             return
 
-        website_repo.push(branch_name)
+        website_repo.push()
 
         if args.token:
             pr_url = website_repo.create_pr(
-                repo="mlflow/mlflow-legacy-website",
-                head=branch_name,
                 title=f"Add documentation for {release_version}",
                 body="",
             )
@@ -238,12 +243,10 @@ def release_post(args: argparse.Namespace) -> None:
         if args.dry_run:
             return
 
-        website_repo.push(branch_name)
+        website_repo.push()
 
         if args.token:
             pr_url = website_repo.create_pr(
-                repo="mlflow/mlflow-website",
-                head=branch_name,
                 title=f"Add release post for {release_version}",
                 body="Be sure to fill in the contents",
             )
