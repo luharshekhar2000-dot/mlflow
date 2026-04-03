@@ -21,13 +21,14 @@ def _shallow_clone(
     token: str | None = None,
     blobless: bool = False,
 ) -> None:
-    url = f"https://github.com/{repo}.git"
+    url = (
+        f"https://x-access-token:{token}@github.com/{repo}.git"
+        if token
+        else f"https://github.com/{repo}.git"
+    )
     cmd = ["git", "clone", "--depth", "1", "--branch", branch]
     if blobless:
         cmd += ["--filter=blob:none"]
-    if token:
-        header = f"AUTHORIZATION: bearer {token}"
-        cmd += ["-c", f"http.extraHeader={header}"]
     cmd += [url, str(dest)]
     subprocess.check_call(cmd)
 
