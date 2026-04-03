@@ -21,10 +21,6 @@ on:
         options:
           - build-docs
           - release-post
-      gtm_id:
-        description: "Google Tag Manager ID (build-docs only)"
-        required: false
-        default: ""
       dry_run:
         description: "Skip push and PR creation"
         required: false
@@ -84,7 +80,6 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           COMMAND: ${{ inputs.command }}
           DRY_RUN: ${{ inputs.dry_run }}
-          GTM_ID: ${{ inputs.gtm_id }}
         run: |
           DRY_RUN_FLAG=""
           if [ "$DRY_RUN" = "true" ]; then
@@ -92,8 +87,8 @@ jobs:
           fi
 
           GTM_FLAG=""
-          if [ "$COMMAND" = "build-docs" ] && [ -n "$GTM_ID" ]; then
-            GTM_FLAG="--gtm-id $GTM_ID"
+          if [ "$COMMAND" = "build-docs" ]; then
+            GTM_FLAG="--gtm-id GTM-N6WMTTJ"
           fi
 
           uv run dev/build_docs.py \
