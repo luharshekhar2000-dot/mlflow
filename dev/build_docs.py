@@ -18,9 +18,10 @@ from packaging.version import InvalidVersion, Version
 
 
 class Repo:
-    def __init__(self, repo: str, root: Path, *, token: str | None = None):
+    def __init__(self, repo: str, root: Path, *, default_branch: str, token: str | None = None):
         self.repo = repo
         self.root = root
+        self.default_branch = default_branch
         self.token = token
 
     @classmethod
@@ -40,7 +41,7 @@ class Repo:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "repo"
             subprocess.check_call([*cmd, url, root])
-            instance = cls(repo, root, token=token)
+            instance = cls(repo, root, default_branch=branch, token=token)
             instance._configure_identity()
             yield instance
 
@@ -88,7 +89,7 @@ class Repo:
                 "--head",
                 self.branch,
                 "--base",
-                "main",
+                self.default_branch,
                 "--title",
                 title,
                 "--body",
