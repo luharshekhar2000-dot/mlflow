@@ -193,6 +193,7 @@ lint = [
   "claude-agent-sdk",
   "pytest",
   "types-requests",
+  "rich",
 ]
 pytest = [
   "pytest==9.0.2",
