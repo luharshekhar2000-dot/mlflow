@@ -84,7 +84,6 @@ def build_docs(args: argparse.Namespace) -> None:
             website_dir,
             user=args.user,
             token=args.token,
-            blobless=True,
         )
 
         _configure_git_identity(website_dir)
