@@ -66,15 +66,11 @@ def build_docs(args: argparse.Namespace) -> None:
     release_version = _read_version(mlflow_dir)
     print(f"Building docs for MLflow {release_version}")
 
-    subprocess.check_call(
-        ["uv", "sync", "--group", "docs", "--extra", "gateway"], cwd=mlflow_dir
-    )
+    subprocess.check_call(["uv", "sync", "--group", "docs", "--extra", "gateway"], cwd=mlflow_dir)
     docs_dir = mlflow_dir / "docs"
     env = {**os.environ, "GTM_ID": args.gtm_id}
     subprocess.check_call(["npm", "ci"], cwd=docs_dir, env=env)
-    subprocess.check_call(
-        ["npm", "run", "build-all", "--", "--use-npm"], cwd=docs_dir, env=env
-    )
+    subprocess.check_call(["npm", "run", "build-all", "--", "--use-npm"], cwd=docs_dir, env=env)
 
     with tempfile.TemporaryDirectory(prefix="mlflow-website-") as website_tmp:
         website_dir = Path(website_tmp) / "repo"
@@ -196,9 +192,7 @@ def release_post(args: argparse.Namespace) -> None:
 
         if "rc" in release_version:
             base_version = release_version.split("rc")[0]
-            content = _RC_TEMPLATE.format(
-                version=release_version, base_version=base_version
-            )
+            content = _RC_TEMPLATE.format(version=release_version, base_version=base_version)
         else:
             content = _RELEASE_TEMPLATE.format(version=release_version)
 
@@ -287,9 +281,7 @@ def _create_pr(*, repo: str, head: str, title: str, body: str, token: str) -> st
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="MLflow release documentation tools"
-    )
+    parser = argparse.ArgumentParser(description="MLflow release documentation tools")
     parser.add_argument(
         "--mlflow-dir",
         default=".",
@@ -313,12 +305,8 @@ def main() -> None:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    docs_parser = subparsers.add_parser(
-        "build-docs", help="Build and publish MLflow documentation"
-    )
-    docs_parser.add_argument(
-        "--gtm-id", default="GTM-TEST", help="Google Tag Manager ID"
-    )
+    docs_parser = subparsers.add_parser("build-docs", help="Build and publish MLflow documentation")
+    docs_parser.add_argument("--gtm-id", default="GTM-TEST", help="Google Tag Manager ID")
 
     subparsers.add_parser("release-post", help="Create a release post")
 
