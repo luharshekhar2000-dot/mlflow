@@ -279,7 +279,7 @@ Please try it out and report any issues on [the issue tracker](https://github.co
 """
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="MLflow release documentation tools")
     parser.add_argument(
         "--mlflow-dir",
@@ -298,13 +298,14 @@ def main() -> None:
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
-
     docs_parser = subparsers.add_parser("build-docs", help="Build and publish MLflow documentation")
     docs_parser.add_argument("--gtm-id", default="GTM-TEST", help="Google Tag Manager ID")
-
     subparsers.add_parser("release-post", help="Create a release post")
+    return parser.parse_args()
 
-    args = parser.parse_args()
+
+def main() -> None:
+    args = parse_args()
     match args.command:
         case "build-docs":
             build_docs(args)
