@@ -18,14 +18,14 @@ def _shallow_clone(
     branch: str,
     dest: Path,
     *,
+    user: str | None = None,
     token: str | None = None,
     blobless: bool = False,
 ) -> None:
-    url = (
-        f"https://x-access-token:{token}@github.com/{repo}.git"
-        if token
-        else f"https://github.com/{repo}.git"
-    )
+    if user and token:
+        url = f"https://{user}:{token}@github.com/{repo}.git"
+    else:
+        url = f"https://github.com/{repo}.git"
     cmd = ["git", "clone", "--depth", "1", "--branch", branch]
     if blobless:
         cmd += ["--filter=blob:none"]
@@ -82,6 +82,7 @@ def build_docs(args: argparse.Namespace) -> None:
             "mlflow/mlflow-legacy-website",
             "main",
             website_dir,
+            user=args.user,
             token=args.token,
             blobless=True,
         )
@@ -180,6 +181,7 @@ def release_post(args: argparse.Namespace) -> None:
             "mlflow/mlflow-website",
             "main",
             website_dir,
+            user=args.user,
             token=args.token,
             blobless=True,
         )
@@ -293,6 +295,11 @@ def main() -> None:
         "--mlflow-dir",
         default=".",
         help="Path to the local MLflow repository checkout",
+    )
+    parser.add_argument(
+        "--user",
+        default="mlflow-app[bot]",
+        help="GitHub username for authentication (default: mlflow-app[bot])",
     )
     parser.add_argument(
         "--token",
