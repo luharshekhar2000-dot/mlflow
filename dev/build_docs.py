@@ -1,5 +1,7 @@
 """Build MLflow release documentation and publish to mlflow-legacy-website."""
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -7,58 +9,98 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
 from packaging.version import InvalidVersion, Version
 
 
-def _shallow_clone(
-    repo: str,
-    branch: str,
-    dest: Path,
-    *,
-    user: str | None = None,
-    token: str | None = None,
-    blobless: bool = False,
-) -> None:
-    if user and token:
-        url = f"https://{user}:{token}@github.com/{repo}.git"
-    else:
-        url = f"https://github.com/{repo}.git"
-    cmd = ["git", "clone", "--depth", "1", "--branch", branch]
-    if blobless:
-        cmd += ["--filter=blob:none"]
-    cmd += [url, str(dest)]
-    subprocess.check_call(cmd)
+class Repo:
+    def __init__(self, root: Path, *, user: str | None = None, token: str | None = None):
+        self.root = root
+        self.user = user
+        self.token = token
+
+    @classmethod
+    @contextmanager
+    def clone(
+        cls,
+        *,
+        repo: str,
+        branch: str,
+        user: str | None = None,
+        token: str | None = None,
+        blobless: bool = False,
+    ) -> Iterator[Repo]:
+        if user and token:
+            url = f"https://{user}:{token}@github.com/{repo}.git"
+        else:
+            url = f"https://github.com/{repo}.git"
+        cmd = ["git", "clone", "--depth", "1", "--branch", branch]
+        if blobless:
+            cmd += ["--filter=blob:none"]
+        with tempfile.TemporaryDirectory(prefix="mlflow-") as tmp:
+            root = Path(tmp) / "repo"
+            cmd += [url, str(root)]
+            subprocess.check_call(cmd)
+            instance = cls(root, user=user, token=token)
+            instance._configure_identity()
+            yield instance
+
+    def _configure_identity(self) -> None:
+        self.git("config", "user.name", "mlflow-app[bot]")
+        self.git("config", "user.email", "mlflow-app[bot]@users.noreply.github.com")
+
+    def git(self, *args: str) -> None:
+        subprocess.check_call(["git", *args], cwd=self.root)
+
+    def checkout_new(self, branch: str) -> None:
+        self.git("checkout", "-b", branch)
+
+    def add_all(self) -> None:
+        self.git("add", "-A")
+
+    def has_changes(self) -> bool:
+        result = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=self.root)
+        return result.returncode != 0
+
+    def commit(self, message: str) -> None:
+        self.git("commit", "-m", message)
+
+    def push(self, branch: str) -> None:
+        self.git("push", "origin", branch)
+
+    def create_pr(self, *, repo: str, head: str, title: str, body: str) -> str:
+        assert self.token
+        env = {**os.environ, "GH_TOKEN": self.token}
+        output = subprocess.check_output(
+            [
+                "gh",
+                "pr",
+                "create",
+                "--repo",
+                repo,
+                "--head",
+                head,
+                "--base",
+                "main",
+                "--title",
+                title,
+                "--body",
+                body,
+            ],
+            text=True,
+            env=env,
+        )
+        return output.strip()
 
 
 def _read_version(repo_root: Path) -> str:
     # `uv version` outputs "<name> <version>", e.g. "mlflow 3.11.0"
     output = subprocess.check_output(["uv", "version"], cwd=repo_root, text=True)
     return output.strip().split()[-1]
-
-
-def _git(repo: Path, *args: str) -> None:
-    subprocess.check_call(["git", *args], cwd=repo)
-
-
-def _has_changes(repo: Path) -> bool:
-    result = subprocess.run(
-        ["git", "diff", "--cached", "--quiet"],
-        cwd=repo,
-    )
-    return result.returncode != 0
-
-
-def _configure_git_identity(repo: Path) -> None:
-    _git(repo, "config", "user.name", "mlflow-app[bot]")
-    _git(
-        repo,
-        "config",
-        "user.email",
-        "mlflow-app[bot]@users.noreply.github.com",
-    )
 
 
 def build_docs(args: argparse.Namespace) -> None:
@@ -72,27 +114,20 @@ def build_docs(args: argparse.Namespace) -> None:
     subprocess.check_call(["npm", "ci"], cwd=docs_dir, env=env)
     subprocess.check_call(["npm", "run", "build-all", "--", "--use-npm"], cwd=docs_dir, env=env)
 
-    with tempfile.TemporaryDirectory(prefix="mlflow-website-") as website_tmp:
-        website_dir = Path(website_tmp) / "repo"
-        _shallow_clone(
-            "mlflow/mlflow-legacy-website",
-            "main",
-            website_dir,
-            user=args.user,
-            token=args.token,
-        )
-
-        _configure_git_identity(website_dir)
-
-        # Create a new branch
+    with Repo.clone(
+        repo="mlflow/mlflow-legacy-website",
+        branch="main",
+        user=args.user,
+        token=args.token,
+    ) as website_repo:
         branch_name = f"docs-{release_version}-{uuid.uuid4().hex[:8]}"
-        _git(website_dir, "checkout", "-b", branch_name)
+        website_repo.checkout_new(branch_name)
 
         version = Version(release_version)
 
         # Clean up release candidate docs when publishing a final release
         if not version.is_prerelease:
-            for p in (website_dir / "docs").iterdir():
+            for p in (website_repo.root / "docs").iterdir():
                 if not p.is_dir():
                     continue
                 try:
@@ -104,42 +139,41 @@ def build_docs(args: argparse.Namespace) -> None:
 
         # Copy built docs
         src = docs_dir / "build" / str(release_version)
-        for dest_name in _version_targets(version, website_dir):
-            dst = website_dir / "docs" / dest_name
+        for dest_name in _version_targets(version, website_repo.root):
+            dst = website_repo.root / "docs" / dest_name
             if dst.exists():
                 shutil.rmtree(dst)
             shutil.copytree(src, dst)
 
         # Update versions.json
-        _update_versions_json(website_dir / "docs" / "versions.json", version)
+        _update_versions_json(website_repo.root / "docs" / "versions.json", version)
 
         # Commit, push, and create PR
-        _git(website_dir, "add", "-A")
+        website_repo.add_all()
 
-        if not _has_changes(website_dir):
+        if not website_repo.has_changes():
             print("No changes to commit, skipping.")
             return
 
-        _git(website_dir, "commit", "-m", "Add docs")
+        website_repo.commit("Add docs")
 
         if args.dry_run:
             return
 
-        _git(website_dir, "push", "origin", branch_name)
+        website_repo.push(branch_name)
 
         if args.token:
-            pr_url = _create_pr(
+            pr_url = website_repo.create_pr(
                 repo="mlflow/mlflow-legacy-website",
                 head=branch_name,
                 title=f"Add documentation for {release_version}",
                 body="",
-                token=args.token,
             )
             print(f"Created {pr_url}")
 
 
-def _version_targets(version: Version, website_dir: Path) -> list[str]:
-    json_path = website_dir / "docs" / "versions.json"
+def _version_targets(version: Version, website_root: Path) -> list[str]:
+    json_path = website_root / "docs" / "versions.json"
     versions_json = json.loads(json_path.read_text())
     latest_version = max(map(Version, versions_json["versions"]))
     targets = [str(version)]
@@ -170,25 +204,19 @@ def release_post(args: argparse.Namespace) -> None:
     release_version = _read_version(mlflow_dir)
     print(f"Creating release post for MLflow {release_version}")
 
-    with tempfile.TemporaryDirectory(prefix="mlflow-website-") as website_tmp:
-        website_dir = Path(website_tmp) / "repo"
-        _shallow_clone(
-            "mlflow/mlflow-website",
-            "main",
-            website_dir,
-            user=args.user,
-            token=args.token,
-            blobless=True,
-        )
-
-        _configure_git_identity(website_dir)
-
+    with Repo.clone(
+        repo="mlflow/mlflow-website",
+        branch="main",
+        user=args.user,
+        token=args.token,
+        blobless=True,
+    ) as website_repo:
         branch_name = f"release-post-{release_version}-{uuid.uuid4().hex[:8]}"
-        _git(website_dir, "checkout", "-b", branch_name)
+        website_repo.checkout_new(branch_name)
 
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         name = f"{today}-{release_version}-release.md"
-        post_path = website_dir / "website" / "releases" / name
+        post_path = website_repo.root / "website" / "releases" / name
 
         if "rc" in release_version:
             base_version = release_version.split("rc")[0]
@@ -198,26 +226,25 @@ def release_post(args: argparse.Namespace) -> None:
 
         post_path.write_text(content)
 
-        _git(website_dir, "add", "-A")
+        website_repo.add_all()
 
-        if not _has_changes(website_dir):
+        if not website_repo.has_changes():
             print("No changes to commit, skipping.")
             return
 
-        _git(website_dir, "commit", "-m", "Add release post")
+        website_repo.commit("Add release post")
 
         if args.dry_run:
             return
 
-        _git(website_dir, "push", "origin", branch_name)
+        website_repo.push(branch_name)
 
         if args.token:
-            pr_url = _create_pr(
+            pr_url = website_repo.create_pr(
                 repo="mlflow/mlflow-website",
                 head=branch_name,
                 title=f"Add release post for {release_version}",
                 body="Be sure to fill in the contents",
-                token=args.token,
             )
             print(f"Created {pr_url}")
 
@@ -254,30 +281,6 @@ pip install mlflow=={version}
 
 Please try it out and report any issues on [the issue tracker](https://github.com/mlflow/mlflow/issues).
 """
-
-
-def _create_pr(*, repo: str, head: str, title: str, body: str, token: str) -> str:
-    env = {**os.environ, "GH_TOKEN": token}
-    output = subprocess.check_output(
-        [
-            "gh",
-            "pr",
-            "create",
-            "--repo",
-            repo,
-            "--head",
-            head,
-            "--base",
-            "main",
-            "--title",
-            title,
-            "--body",
-            body,
-        ],
-        text=True,
-        env=env,
-    )
-    return output.strip()
 
 
 def main() -> None:
