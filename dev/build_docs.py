@@ -42,7 +42,7 @@ class Repo:
         cmd = ["git", "clone", "--depth", "1", "--branch", branch]
         if blobless:
             cmd += ["--filter=blob:none"]
-        with tempfile.TemporaryDirectory(prefix="mlflow-") as tmp:
+        with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "repo"
             subprocess.check_call([*cmd, url, root])
             instance = cls(repo, root, user=user, token=token)
