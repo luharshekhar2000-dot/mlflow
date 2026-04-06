@@ -155,6 +155,22 @@ def test_openai_other_error(set_envs):
             score_model_on_payload("openai:/gpt-4o-mini", "my prompt", {"temperature": 0.1})
 
 
+@pytest.mark.parametrize(
+    ("missing_env", "expected_match"),
+    [
+        ("AZURE_API_KEY", "AZURE_API_KEY environment variable must be set"),
+        ("AZURE_API_BASE", "AZURE_API_BASE environment variable must be set"),
+        ("AZURE_API_VERSION", "AZURE_API_VERSION environment variable must be set"),
+    ],
+)
+def test_score_model_azure_openai_without_required_env(
+    set_azure_envs, monkeypatch, missing_env, expected_match
+):
+    monkeypatch.delenv(missing_env, raising=False)
+    with pytest.raises(MlflowException, match=expected_match):
+        score_model_on_payload("azure:/test-openai", "")
+
+
 def test_score_model_azure_openai(set_azure_envs):
     with mock.patch(
         "mlflow.metrics.genai.model_utils._send_request", return_value=_OAI_RESPONSE

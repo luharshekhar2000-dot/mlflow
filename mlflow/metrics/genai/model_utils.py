@@ -345,11 +345,21 @@ def _get_provider_instance(provider: str, model: str) -> "BaseProvider":
                 f"{AZURE_API_KEY_ENV_VAR} environment variable must be set "
                 "to use the azure provider."
             )
+        if not os.environ.get(AZURE_API_BASE_ENV_VAR):
+            raise MlflowException.invalid_parameter_value(
+                f"{AZURE_API_BASE_ENV_VAR} environment variable must be set "
+                "to use the azure provider."
+            )
+        if not os.environ.get(AZURE_API_VERSION_ENV_VAR):
+            raise MlflowException.invalid_parameter_value(
+                f"{AZURE_API_VERSION_ENV_VAR} environment variable must be set "
+                "to use the azure provider."
+            )
         config = OpenAIConfig(
             openai_api_key=os.environ[AZURE_API_KEY_ENV_VAR],
             openai_api_type="azure",
-            openai_api_base=os.environ.get(AZURE_API_BASE_ENV_VAR),
-            openai_api_version=os.environ.get(AZURE_API_VERSION_ENV_VAR),
+            openai_api_base=os.environ[AZURE_API_BASE_ENV_VAR],
+            openai_api_version=os.environ[AZURE_API_VERSION_ENV_VAR],
             openai_deployment_name=model,
         )
         return OpenAIProvider(_get_route_config(config))
