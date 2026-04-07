@@ -75,6 +75,14 @@ jobs:
         with:
           persist-credentials: false
           ref: branch-3.11
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          path: pr-source
+          sparse-checkout: dev/build_docs.py
+          sparse-checkout-cone-mode: false
+      - name: Copy dev/build_docs.py from PR
+        run: cp pr-source/dev/build_docs.py dev/build_docs.py
       - uses: ./.github/actions/setup-java
       - uses: ./.github/actions/setup-python
       - uses: ./.github/actions/setup-node
