@@ -58,7 +58,7 @@ jobs:
 
   # TODO: Remove this job after verifying push and PR creation work
   test-push:
-    if: github.event_name == 'pull_request' && false
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
