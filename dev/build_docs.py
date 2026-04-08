@@ -140,9 +140,11 @@ def build_docs(args: argparse.Namespace) -> None:
                 if v.is_prerelease and v.base_version == version.base_version:
                     shutil.rmtree(p)
 
-        # Copy built docs
-        src = docs_dir / "build" / str(release_version)
+        # Copy built docs. `build-all.py` produces a separate build per target
+        # (e.g. `build/3.11.1` and `build/latest`), each with its own baseUrl,
+        # so we must copy from the matching directory rather than reusing one source.
         for dest_name in _version_targets(version, website_repo.root):
+            src = docs_dir / "build" / dest_name
             dst = website_repo.root / "docs" / dest_name
             if dst.exists():
                 shutil.rmtree(dst)
