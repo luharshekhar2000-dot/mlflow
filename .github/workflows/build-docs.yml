@@ -83,6 +83,7 @@ jobs:
           sparse-checkout-cone-mode: false
       - name: Copy dev/build_docs.py from PR
         run: cp pr-source/dev/build_docs.py dev/build_docs.py
+      - uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-java
       - uses: ./.github/actions/setup-python
       - uses: ./.github/actions/setup-node
@@ -110,6 +111,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-java
       - uses: ./.github/actions/setup-python
       - uses: ./.github/actions/setup-node
