@@ -329,7 +329,7 @@ function NewSecretForm({
           {field.fieldType === 'secret' ? (
             <SecretInput
               id={`${domId}.secret.${field.name}`}
-              componentId={`${componentId}.secret`}
+              componentId={`${componentId}.secret.${field.name}`}
               value={value.secretFields[field.name] ?? ''}
               onChange={(e) => onSecretFieldChange(field.name, e.target.value)}
               placeholder={field.description}
