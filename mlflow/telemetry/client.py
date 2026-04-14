@@ -38,8 +38,13 @@ from mlflow.utils.rest_utils import http_request
 _DATABRICKS_SCHEMES = ("databricks", "databricks-uc", "uc")
 
 
-# Cache per tracking URI; 16 is more than enough for any realistic number of
-# distinct tracking URIs within a single process.
+@lru_cache(maxsize=1)
+def _get_cached_databricks_host_creds(tracking_uri: str):
+    from mlflow.utils.databricks_utils import get_databricks_host_creds
+
+    return get_databricks_host_creds(tracking_uri)
+
+
 @lru_cache(maxsize=16)
 def _fetch_server_info(tracking_uri: str) -> dict[str, Any] | None:
     try:
@@ -290,10 +295,9 @@ class TelemetryClient:
 
     def _forward_to_databricks(self, records: list[Record], request_timeout: float = 1):
         from mlflow.tracking._tracking_service.utils import get_tracking_uri
-        from mlflow.utils.databricks_utils import get_databricks_host_creds
 
         try:
-            creds = get_databricks_host_creds(get_tracking_uri())
+            creds = _get_cached_databricks_host_creds(get_tracking_uri())
         except Exception as e:
             _log_error(f"Failed to get Databricks credentials for telemetry: {e}")
             return
