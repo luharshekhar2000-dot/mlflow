@@ -45,6 +45,8 @@ def _get_cached_databricks_host_creds(tracking_uri: str):
     return get_databricks_host_creds(tracking_uri)
 
 
+# Cache per tracking URI; 16 is more than enough for any realistic number of
+# distinct tracking URIs within a single process.
 @lru_cache(maxsize=16)
 def _fetch_server_info(tracking_uri: str) -> dict[str, Any] | None:
     try:
