@@ -1007,9 +1007,10 @@ def _should_clone_trace(
     if trace is None:
         return False
 
-    # If the trace is stored in UC table, we don't clone the trace
+    # If the trace is stored in a UC table, clone it to the user's experiment
+    # so that we don't need MODIFY permission on the source UC schema.
     if trace.info.trace_location.uc_schema is not None:
-        return False
+        return True
 
     # Check if the trace is from the same experiment. If it isn't, we need to clone the trace
     trace_experiment = trace.info.trace_location.mlflow_experiment

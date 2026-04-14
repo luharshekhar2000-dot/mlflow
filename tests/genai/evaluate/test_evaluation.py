@@ -18,13 +18,14 @@ from mlflow.entities.trace import Trace
 from mlflow.entities.trace_data import TraceData
 from mlflow.exceptions import MlflowException
 from mlflow.genai.datasets import EvaluationDataset, create_dataset
-from mlflow.genai.evaluation.entities import EvaluationResult
+from mlflow.genai.evaluation.entities import EvalItem, EvaluationResult
 from mlflow.genai.evaluation.harness import (
     AUTO_INITIAL_RPS,
+    _run_predict,
     _should_clone_trace,
     backpressure_buffer,
 )
-from mlflow.genai.evaluation.rate_limiter import RPSRateLimiter
+from mlflow.genai.evaluation.rate_limiter import NoOpRateLimiter, RPSRateLimiter
 from mlflow.genai.scorers.base import scorer
 from mlflow.genai.scorers.builtin_scorers import RelevanceToQuery
 from mlflow.genai.simulators import ConversationSimulator
@@ -1931,24 +1932,18 @@ def test_adaptive_rate_reduces_on_429(monkeypatch):
     assert rate_after_throttle[0] < AUTO_INITIAL_RPS
 
 
-@pytest.mark.parametrize(
-    ("trace_or_none", "run_id"),
-    [
-        (None, "run-1"),
-        (
-            Trace(
-                info=create_test_trace_info_with_uc_table(
-                    trace_id="tr-uc", catalog_name="catalog", schema_name="schema"
-                ),
-                data=TraceData(spans=[]),
-            ),
-            "run-1",
+def test_should_clone_trace_returns_false_for_none():
+    assert _should_clone_trace(None, run_id="run-1") is False
+
+
+def test_should_clone_trace_returns_true_for_uc_schema():
+    trace = Trace(
+        info=create_test_trace_info_with_uc_table(
+            trace_id="tr-uc", catalog_name="catalog", schema_name="schema"
         ),
-    ],
-    ids=["none_trace", "uc_schema_trace"],
-)
-def test_should_clone_trace_returns_false_early(trace_or_none, run_id):
-    assert _should_clone_trace(trace_or_none, run_id=run_id) is False
+        data=TraceData(spans=[]),
+    )
+    assert _should_clone_trace(trace, run_id="run-1") is True
 
 
 @pytest.mark.parametrize(
@@ -2000,3 +1995,39 @@ def test_should_clone_trace_does_not_call_get_experiment_id_when_provided(mlflow
     ):
         _should_clone_trace(mlflow_experiment_trace, run_id="run-1", experiment_id="exp-123")
         mock_get_exp.assert_not_called()
+
+
+def test_run_predict_copies_uc_trace_instead_of_linking():
+    uc_trace = Trace(
+        info=create_test_trace_info_with_uc_table(
+            trace_id="tr-uc", catalog_name="catalog", schema_name="schema"
+        ),
+        data=TraceData(spans=[]),
+    )
+    eval_item = EvalItem(
+        request_id="req-1",
+        inputs={"q": "hello"},
+        outputs=None,
+        expectations={},
+        trace=uc_trace,
+    )
+    cloned_trace_id = "cloned-trace-id"
+    cloned_trace = mock.MagicMock()
+
+    with (
+        mock.patch(
+            "mlflow.genai.evaluation.harness.copy_trace_to_experiment",
+            return_value=cloned_trace_id,
+        ) as mock_copy,
+        mock.patch("mlflow.get_trace", return_value=cloned_trace),
+        mock.patch("mlflow.genai.evaluation.harness.MlflowClient") as mock_client_cls,
+    ):
+        _run_predict(
+            eval_item,
+            predict_fn=None,
+            run_id=None,
+            rate_limiter=NoOpRateLimiter(),
+        )
+        mock_copy.assert_called_once_with(uc_trace.to_dict())
+        mock_client_cls.return_value.link_traces_to_run.assert_not_called()
+    assert eval_item.trace is cloned_trace
