@@ -26,12 +26,12 @@ interface UsersListProps {
   onDeleteClick: (user: User) => void;
 }
 
-const ROLE_TAG_COLORS: Record<string, 'default' | 'lemon' | 'indigo' | 'blue' | 'red'> = {
+const ROLE_TAG_COLORS = {
   admin: 'lemon',
   editor: 'indigo',
   viewer: 'blue',
   no_permissions: 'default',
-};
+} satisfies Record<string, 'default' | 'lemon' | 'indigo' | 'blue' | 'red'>;
 
 const formatRole = (role: string) => {
   const map: Record<string, string> = {
