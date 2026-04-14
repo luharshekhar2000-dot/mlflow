@@ -1009,7 +1009,10 @@ def _should_clone_trace(
 
     # If the trace is stored in a UC table, clone it to the user's experiment
     # so that we don't need MODIFY permission on the source UC schema.
-    if trace.info.trace_location.uc_schema is not None:
+    if (
+        trace.info.trace_location.uc_schema is not None
+        or trace.info.trace_location.uc_table_prefix is not None
+    ):
         return True
 
     # Check if the trace is from the same experiment. If it isn't, we need to clone the trace
