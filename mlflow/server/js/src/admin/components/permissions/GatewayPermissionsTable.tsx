@@ -1,5 +1,6 @@
 import {
-  Select,
+  SimpleSelect,
+  SimpleSelectOption,
   Table,
   TableCell,
   TableHeader,
@@ -75,10 +76,12 @@ export const GatewayPermissionsTable = ({
                 {PERMISSION_OPTIONS.find((o) => o.value === ep.permission)?.label ?? ep.permission}
               </Typography.Text>
             ) : (
-              <Select
+              <SimpleSelect
                 componentId="mlflow.admin.gateway-perms.permission-select"
                 value={ep.permission}
-                onChange={(val) => onPermissionChange(ep.endpoint_id, val as GatewayPermissionLevel)}
+                onChange={({ target: { value } }) =>
+                  onPermissionChange(ep.endpoint_id, value as GatewayPermissionLevel)
+                }
                 aria-label={formatMessage(
                   {
                     defaultMessage: 'Permission for {endpoint}',
@@ -88,11 +91,11 @@ export const GatewayPermissionsTable = ({
                 )}
               >
                 {PERMISSION_OPTIONS.map((opt) => (
-                  <Select.Option key={opt.value} value={opt.value}>
+                  <SimpleSelectOption key={opt.value} value={opt.value}>
                     {opt.label}
-                  </Select.Option>
+                  </SimpleSelectOption>
                 ))}
-              </Select>
+              </SimpleSelect>
             )}
           </TableCell>
         </TableRow>

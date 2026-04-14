@@ -1,5 +1,6 @@
 import {
-  Select,
+  SimpleSelect,
+  SimpleSelectOption,
   Table,
   TableCell,
   TableHeader,
@@ -90,10 +91,10 @@ export const FeaturePermissionsTable = ({
                 {PERMISSION_OPTIONS.find((o) => o.value === fp.permission)?.label ?? fp.permission}
               </Typography.Text>
             ) : (
-              <Select
+              <SimpleSelect
                 componentId="mlflow.admin.feature-perms.permission-select"
                 value={fp.permission}
-                onChange={(val) => onPermissionChange(fp.feature, val as FeaturePermission)}
+                onChange={({ target: { value } }) => onPermissionChange(fp.feature, value as FeaturePermission)}
                 aria-label={formatMessage(
                   {
                     defaultMessage: 'Permission for {feature}',
@@ -103,11 +104,11 @@ export const FeaturePermissionsTable = ({
                 )}
               >
                 {PERMISSION_OPTIONS.map((opt) => (
-                  <Select.Option key={opt.value} value={opt.value}>
+                  <SimpleSelectOption key={opt.value} value={opt.value}>
                     {opt.label}
-                  </Select.Option>
+                  </SimpleSelectOption>
                 ))}
-              </Select>
+              </SimpleSelect>
             )}
           </TableCell>
         </TableRow>
