@@ -80,8 +80,10 @@ from mlflow.exceptions import (
     _UnsupportedMultipartDownloadException,
     _UnsupportedMultipartUploadException,
 )
+from mlflow.gateway.budget import maybe_refresh_budget_policies
 from mlflow.gateway.budget_tracker import get_budget_tracker
 from mlflow.gateway.utils import is_valid_endpoint_name
+from mlflow.genai.scorers.scorer_utils import DECORATOR_SCORER_REGISTRATION_NOT_SUPPORTED_ERROR
 from mlflow.models import Model
 from mlflow.prompt.constants import PROMPT_TEXT_TAG_KEY, PROMPT_TYPE_TAG_KEY
 from mlflow.protos import databricks_pb2
@@ -142,6 +144,7 @@ from mlflow.protos.prompt_optimization_pb2 import (
 )
 from mlflow.protos.service_pb2 import (
     AddDatasetToExperiments,
+    AddGuardrailToEndpoint,
     AttachModelToGatewayEndpoint,
     BatchGetTraceInfos,
     BatchGetTraces,
@@ -153,6 +156,7 @@ from mlflow.protos.service_pb2 import (
     CreateGatewayBudgetPolicy,
     CreateGatewayEndpoint,
     CreateGatewayEndpointBinding,
+    CreateGatewayGuardrail,
     CreateGatewayModelDefinition,
     CreateGatewaySecret,
     CreateLoggedModel,
@@ -169,6 +173,7 @@ from mlflow.protos.service_pb2 import (
     DeleteGatewayEndpoint,
     DeleteGatewayEndpointBinding,
     DeleteGatewayEndpointTag,
+    DeleteGatewayGuardrail,
     DeleteGatewayModelDefinition,
     DeleteGatewaySecret,
     DeleteLoggedModel,
@@ -193,6 +198,7 @@ from mlflow.protos.service_pb2 import (
     GetExperimentByName,
     GetGatewayBudgetPolicy,
     GetGatewayEndpoint,
+    GetGatewayGuardrail,
     GetGatewayModelDefinition,
     GetGatewaySecretInfo,
     GetLoggedModel,
@@ -208,10 +214,12 @@ from mlflow.protos.service_pb2 import (
     LinkPromptsToTrace,
     LinkTracesToRun,
     ListArtifacts,
+    ListEndpointGuardrailConfigs,
     ListGatewayBudgetPolicies,
     ListGatewayBudgetWindows,
     ListGatewayEndpointBindings,
     ListGatewayEndpoints,
+    ListGatewayGuardrails,
     ListGatewayModelDefinitions,
     ListGatewaySecretInfos,
     ListLoggedModelArtifacts,
@@ -229,6 +237,7 @@ from mlflow.protos.service_pb2 import (
     QueryTraceMetrics,
     RegisterScorer,
     RemoveDatasetFromExperiments,
+    RemoveGuardrailFromEndpoint,
     RestoreExperiment,
     RestoreRun,
     SearchDatasets,
@@ -249,6 +258,7 @@ from mlflow.protos.service_pb2 import (
     StartTrace,
     StartTraceV3,
     UpdateAssessment,
+    UpdateEndpointGuardrailConfig,
     UpdateExperiment,
     UpdateGatewayBudgetPolicy,
     UpdateGatewayEndpoint,
@@ -268,7 +278,6 @@ from mlflow.protos.webhooks_pb2 import (
     UpdateWebhook,
     WebhookService,
 )
-from mlflow.server.gateway_budget import maybe_refresh_budget_policies
 from mlflow.server.validation import _validate_content_type
 from mlflow.server.workspace_helpers import (
     _get_workspace_store,
@@ -4226,14 +4235,17 @@ def _invoke_issue_detection_handler():
 
     # Create the run upfront so we can return run_id immediately
     model_name = f"gateway:/{endpoint_name}" if endpoint_name else f"{provider}:/{model}"
+    tags = {
+        MLFLOW_RUN_TYPE: MLFLOW_RUN_TYPE_ISSUE_DETECTION,
+        "categories": ",".join(categories),
+        "model": model_name,
+        "total_traces": len(trace_ids),
+    }
+    if endpoint_name:
+        tags["endpoint_name"] = endpoint_name
     run = mlflow.start_run(
         experiment_id=experiment_id,
-        tags={
-            MLFLOW_RUN_TYPE: MLFLOW_RUN_TYPE_ISSUE_DETECTION,
-            "categories": ",".join(categories),
-            "model": model_name,
-            "total_traces": len(trace_ids),
-        },
+        tags=tags,
     )
     run_id = run.info.run_id
 
@@ -4640,6 +4652,19 @@ def _register_scorer():
             "serialized_scorer": [_assert_required, _assert_string],
         },
     )
+    # Decorator scorers contain a `call_source` field that is executed via exec() during
+    # deserialization. The Python client blocks this via `_check_can_be_registered()`, but
+    # that check is client-side only and can be bypassed by calling the REST API directly.
+    # Enforce the same restriction here in the server handler so it applies regardless of
+    # how the request arrives.
+    try:
+        serialized_data = json.loads(request_message.serialized_scorer)
+    except json.JSONDecodeError as e:
+        raise MlflowException.invalid_parameter_value("serialized_scorer must be valid JSON") from e
+    if serialized_data.get("call_source") is not None:
+        raise MlflowException.invalid_parameter_value(
+            DECORATOR_SCORER_REGISTRATION_NOT_SUPPORTED_ERROR
+        )
     scorer_version = _get_tracking_store().register_scorer(
         request_message.experiment_id,
         request_message.name,
@@ -5554,6 +5579,172 @@ def _list_budget_windows():
             current_spend=w.cumulative_spend,
         )
         response_message.windows.append(window_msg)
+    return _wrap_response(response_message)
+
+
+@catch_mlflow_exception
+@_disable_if_artifacts_only
+def _create_gateway_guardrail():
+    request_message = _get_request_message(
+        CreateGatewayGuardrail(),
+        schema={
+            "name": [_assert_required, _assert_string],
+            "scorer_id": [_assert_required, _assert_string],
+            "scorer_version": [_assert_required, _assert_intlike],
+            "stage": [_assert_required],
+            "action": [_assert_required],
+            "action_endpoint_id": [_assert_string],
+        },
+    )
+    from mlflow.entities.gateway_guardrail import GuardrailAction, GuardrailStage
+
+    stage = GuardrailStage.from_proto(request_message.stage)
+    if stage is None:
+        raise MlflowException(
+            message=f"Invalid stage: {request_message.stage}",
+            error_code=INVALID_PARAMETER_VALUE,
+        )
+    action = GuardrailAction.from_proto(request_message.action)
+    if action is None:
+        raise MlflowException(
+            message=f"Invalid action: {request_message.action}",
+            error_code=INVALID_PARAMETER_VALUE,
+        )
+    guardrail = _get_tracking_store().create_gateway_guardrail(
+        name=request_message.name,
+        scorer_id=request_message.scorer_id,
+        scorer_version=request_message.scorer_version,
+        stage=stage,
+        action=action,
+        action_endpoint_id=request_message.action_endpoint_id or None,
+        created_by=_get_user(),
+    )
+    response_message = CreateGatewayGuardrail.Response()
+    response_message.guardrail.CopyFrom(guardrail.to_proto())
+    return _wrap_response(response_message)
+
+
+@catch_mlflow_exception
+@_disable_if_artifacts_only
+def _get_gateway_guardrail():
+    request_message = _get_request_message(
+        GetGatewayGuardrail(),
+        schema={"guardrail_id": [_assert_required, _assert_string]},
+    )
+    guardrail = _get_tracking_store().get_gateway_guardrail(
+        guardrail_id=request_message.guardrail_id,
+    )
+    response_message = GetGatewayGuardrail.Response()
+    response_message.guardrail.CopyFrom(guardrail.to_proto())
+    return _wrap_response(response_message)
+
+
+@catch_mlflow_exception
+@_disable_if_artifacts_only
+def _delete_gateway_guardrail():
+    request_message = _get_request_message(
+        DeleteGatewayGuardrail(),
+        schema={"guardrail_id": [_assert_required, _assert_string]},
+    )
+    _get_tracking_store().delete_gateway_guardrail(request_message.guardrail_id)
+    return _wrap_response(DeleteGatewayGuardrail.Response())
+
+
+@catch_mlflow_exception
+@_disable_if_artifacts_only
+def _list_gateway_guardrails():
+    request_message = _get_request_message(
+        ListGatewayGuardrails(),
+        schema={
+            "max_results": [_assert_intlike],
+            "page_token": [_assert_string],
+        },
+    )
+    guardrails = _get_tracking_store().list_gateway_guardrails(
+        max_results=request_message.max_results or SEARCH_MAX_RESULTS_DEFAULT,
+        page_token=request_message.page_token or None,
+    )
+    response_message = ListGatewayGuardrails.Response()
+    response_message.guardrails.extend([g.to_proto() for g in guardrails])
+    if guardrails.token:
+        response_message.next_page_token = guardrails.token
+    return _wrap_response(response_message)
+
+
+@catch_mlflow_exception
+@_disable_if_artifacts_only
+def _add_guardrail_to_endpoint():
+    request_message = _get_request_message(
+        AddGuardrailToEndpoint(),
+        schema={
+            "endpoint_id": [_assert_required, _assert_string],
+            "guardrail_id": [_assert_required, _assert_string],
+            "execution_order": [_assert_intlike],
+        },
+    )
+    config = _get_tracking_store().add_guardrail_to_endpoint(
+        endpoint_id=request_message.endpoint_id,
+        guardrail_id=request_message.guardrail_id,
+        execution_order=(
+            request_message.execution_order if request_message.HasField("execution_order") else None
+        ),
+        created_by=_get_user(),
+    )
+    response_message = AddGuardrailToEndpoint.Response()
+    response_message.config.CopyFrom(config.to_proto())
+    return _wrap_response(response_message)
+
+
+@catch_mlflow_exception
+@_disable_if_artifacts_only
+def _remove_guardrail_from_endpoint():
+    request_message = _get_request_message(
+        RemoveGuardrailFromEndpoint(),
+        schema={
+            "endpoint_id": [_assert_required, _assert_string],
+            "guardrail_id": [_assert_required, _assert_string],
+        },
+    )
+    _get_tracking_store().remove_guardrail_from_endpoint(
+        endpoint_id=request_message.endpoint_id,
+        guardrail_id=request_message.guardrail_id,
+    )
+    return _wrap_response(RemoveGuardrailFromEndpoint.Response())
+
+
+@catch_mlflow_exception
+@_disable_if_artifacts_only
+def _list_endpoint_guardrail_configs():
+    request_message = _get_request_message(
+        ListEndpointGuardrailConfigs(),
+        schema={"endpoint_id": [_assert_required, _assert_string]},
+    )
+    configs = _get_tracking_store().list_endpoint_guardrail_configs(
+        endpoint_id=request_message.endpoint_id,
+    )
+    response_message = ListEndpointGuardrailConfigs.Response()
+    response_message.configs.extend([c.to_proto() for c in configs])
+    return _wrap_response(response_message)
+
+
+@catch_mlflow_exception
+def _update_endpoint_guardrail_config():
+    request_message = _get_request_message(
+        UpdateEndpointGuardrailConfig(),
+        schema={
+            "endpoint_id": [_assert_required, _assert_string],
+            "guardrail_id": [_assert_required, _assert_string],
+        },
+    )
+    kwargs = {
+        "endpoint_id": request_message.endpoint_id,
+        "guardrail_id": request_message.guardrail_id,
+    }
+    if request_message.HasField("execution_order"):
+        kwargs["execution_order"] = request_message.execution_order
+    config = _get_tracking_store().update_endpoint_guardrail_config(**kwargs)
+    response_message = UpdateEndpointGuardrailConfig.Response()
+    response_message.config.CopyFrom(config.to_proto())
     return _wrap_response(response_message)
 
 
@@ -6771,6 +6962,15 @@ HANDLERS = {
     DeleteGatewayBudgetPolicy: _delete_budget_policy,
     ListGatewayBudgetPolicies: _list_budget_policies,
     ListGatewayBudgetWindows: _list_budget_windows,
+    # Guardrail APIs
+    CreateGatewayGuardrail: _create_gateway_guardrail,
+    GetGatewayGuardrail: _get_gateway_guardrail,
+    DeleteGatewayGuardrail: _delete_gateway_guardrail,
+    ListGatewayGuardrails: _list_gateway_guardrails,
+    AddGuardrailToEndpoint: _add_guardrail_to_endpoint,
+    RemoveGuardrailFromEndpoint: _remove_guardrail_from_endpoint,
+    ListEndpointGuardrailConfigs: _list_endpoint_guardrail_configs,
+    UpdateEndpointGuardrailConfig: _update_endpoint_guardrail_config,
     # Prompt Optimization APIs
     CreatePromptOptimizationJob: _create_prompt_optimization_job,
     GetPromptOptimizationJob: _get_prompt_optimization_job,
