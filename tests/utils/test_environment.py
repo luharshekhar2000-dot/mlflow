@@ -433,6 +433,12 @@ def test_infer_requirements_error_handling(env_var, fallbacks, should_raise, mon
             ],
             ['numpy>=1.0,<2.0; python_version >= "3.10"'],
         ),
+        # Local version label on second entry - prefer non-local (PyPI-installable)
+        (["torch==2.7.1", "torch==2.7.1+cu128"], ["torch==2.7.1"]),
+        # Local version label on first entry - prefer non-local (PyPI-installable)
+        (["torch==2.7.1+cu128", "torch==2.7.1"], ["torch==2.7.1"]),
+        # Both have the same local label - should deduplicate normally
+        (["torch==2.7.1+cu128", "torch==2.7.1+cu128"], ["torch==2.7.1+cu128"]),
     ],
 )
 def test_deduplicate_requirements_resolve_correctly(input_requirements, expected):
