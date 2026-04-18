@@ -1,6 +1,14 @@
 # Increase the timeout length for `utils::download.file` because the default value (60 seconds)
 # could be too short to download large packages such as h2o.
 options(timeout=300)
+# The CRAN mirror can serve a pak build that bundles a cli version that fails to load on
+# R 4.2.1 with: undefined symbol: R_getVarEx. Install pak from r-lib's pre-built binary repo.
+install.packages("pak", repos = sprintf(
+  "https://r-lib.github.io/p/pak/stable/%s/%s/%s",
+  .Platform$pkgType,
+  R.Version()$os,
+  R.Version()$arch
+))
 install.packages("devtools", dependencies = TRUE)
 devtools::install_version("usethis", "3.2.1")
 devtools::install_dev_deps(dependencies = TRUE)
