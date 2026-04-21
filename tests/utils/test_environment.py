@@ -456,6 +456,8 @@ def test_deduplicate_requirements_resolve_correctly(input_requirements, expected
         ["markdown<3", "markdown>3"],
         # Conflicting versions
         ["markdown==3.0", "markdown==3.5"],
+        # Differing local labels are a real conflict and should not be silently dropped
+        ["torch==2.7.1+cu128", "torch==2.7.1+cpu"],
     ],
 )
 def test_invalid_requirements_raise(input_requirements):

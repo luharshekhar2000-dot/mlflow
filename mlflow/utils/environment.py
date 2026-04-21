@@ -12,6 +12,7 @@ from copy import deepcopy
 
 import yaml
 from packaging.requirements import InvalidRequirement, Requirement
+from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 from mlflow.environment_variables import (
@@ -847,20 +848,18 @@ def _deduplicate_requirements(requirements):
                         and new_specs[0].operator == "=="
                         and _strip_local_version_label(existing_specs[0].version)
                         == _strip_local_version_label(new_specs[0].version)
-                        and (
-                            _get_local_version_label(existing_specs[0].version)
-                            or _get_local_version_label(new_specs[0].version)
-                        )
+                        and bool(_get_local_version_label(existing_specs[0].version))
+                        != bool(_get_local_version_label(new_specs[0].version))
                     ):
                         # Keep whichever specifier has no local label (PyPI-installable)
                         if _get_local_version_label(new_specs[0].version):
                             parsed_req.specifier = existing_req.specifier
                     else:
                         _validate_version_constraints([str(existing_req), req])
-                        parsed_req.specifier = ",".join([
+                        parsed_req.specifier = SpecifierSet(",".join([
                             str(existing_req.specifier),
                             str(parsed_req.specifier),
-                        ])
+                        ]))
 
                 # Preserve existing specifiers
                 if existing_req.specifier and not parsed_req.specifier:
