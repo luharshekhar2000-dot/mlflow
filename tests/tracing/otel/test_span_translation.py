@@ -381,7 +381,7 @@ def test_translate_token_usage_with_partial_cache_fields():
         ),
     ],
 )
-def test_translate_token_usage_zero_values(
+def test_translate_token_usage_preserves_zero_values(
     attributes, expected_input, expected_output, expected_total
 ):
     span = mock.Mock(spec=Span)
