@@ -1271,8 +1271,8 @@ module.exports = {
   "mlflow.gateway.endpoint-bindings.accordion": "",
   "mlflow.gateway.endpoint-bindings.drawer": "",
   "mlflow.gateway.endpoint-usage-modal": "",
-  "mlflow.gateway.endpoint.tabs": "",
   "mlflow.gateway.endpoint.guardrails-tab-tooltip": "",
+  "mlflow.gateway.endpoint.tabs": "",
   "mlflow.gateway.endpoint.traces-tab-tooltip": "",
   "mlflow.gateway.endpoint.usage-tab-tooltip": "",
   "mlflow.gateway.endpoint.usage.view-full-dashboard": "",
@@ -1869,6 +1869,9 @@ module.exports = {
   "mlflow.traces.issue-detection.view-issues-button": "",
   "mlflow.traces.issue-detection.view-issues-link": "",
   "mlflow.traces.issue-detection.view-traces-link": "",
+
+  // -- mlflow.traces-tab --
+  "mlflow.traces-tab.count-info": "",
 
   // -- mlflow.traces-table --
   "mlflow.traces-table.column-header-tooltip": "",

@@ -1,7 +1,16 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { isEmpty as isEmptyFn } from 'lodash';
-import { Empty, ParagraphSkeleton, DangerIcon, Spacer, Drawer } from '@databricks/design-system';
+import {
+  Empty,
+  ParagraphSkeleton,
+  DangerIcon,
+  Spacer,
+  Drawer,
+  DesignSystemEventProviderAnalyticsEventTypes,
+  DesignSystemEventProviderComponentTypes,
+} from '@databricks/design-system';
+import { useLogTelemetryEvent } from '../../../../../telemetry/hooks/useLogTelemetryEvent';
 import type {
   TracesTableColumn,
   TraceActions,
@@ -368,6 +377,22 @@ const TracesV3LogsImpl = React.memo(
       metadataTotalCount: totalCount,
       disabled: isQueryDisabled,
     });
+
+    const logTelemetryEvent = useLogTelemetryEvent();
+
+    useEffect(() => {
+      if (!countInfo.logCountLoading && singleExperimentId) {
+        logTelemetryEvent({
+          componentId: 'mlflow.traces-tab.count-info',
+          componentType: DesignSystemEventProviderComponentTypes.Card,
+          componentViewId: singleExperimentId,
+          eventType: DesignSystemEventProviderAnalyticsEventTypes.OnView,
+          value: JSON.stringify({
+            totalTraces: countInfo.totalCount,
+          }),
+        });
+      }
+    }, [countInfo.logCountLoading, countInfo.totalCount, singleExperimentId, logTelemetryEvent]);
 
     const assessmentCountMetrics = useAssessmentCountMetrics({
       experimentIds,
