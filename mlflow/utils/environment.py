@@ -856,10 +856,12 @@ def _deduplicate_requirements(requirements):
                             parsed_req.specifier = existing_req.specifier
                     else:
                         _validate_version_constraints([str(existing_req), req])
-                        parsed_req.specifier = SpecifierSet(",".join([
-                            str(existing_req.specifier),
-                            str(parsed_req.specifier),
-                        ]))
+                        parsed_req.specifier = SpecifierSet(
+                            ",".join([
+                                str(existing_req.specifier),
+                                str(parsed_req.specifier),
+                            ])
+                        )
 
                 # Preserve existing specifiers
                 if existing_req.specifier and not parsed_req.specifier:
